@@ -1,6 +1,6 @@
 # Wishlist Cris & Melck
 
-Web de deseos para dos personas (Cris y Melck) con **3 espacios**: `/cris`, `/` (compartido, home) y `/melck`.
+Web de deseos para dos personas (Cris y Melck) con **3 espacios** (cris, compartido, melck). Portada pública de solo lectura en `/`; edición con login en `/editar/*`.
 Cada espacio es un **tablero de corcho con marco** (imagen `public/tablero-hd.jpg`, 1536×1024, tamaño fijo) donde cada artículo es una tarjeta pegada con pin/ganchito: **artículo** (polaroid), **cine** (ticket) o **viaje** (boarding pass).
 
 > Next.js 16 con cambios incompatibles (ver `AGENTS.md`): antes de tocar APIs de Next lee `node_modules/next/dist/docs/`.
@@ -22,8 +22,9 @@ src/
     layout.tsx             fuentes (Geist + Caveat para el texto "a mano")
     login/                 página + server actions signIn/signOut
     (app)/layout.tsx       header (SpaceNav + salir); exige perfil cris|melck
-    (app)/page.tsx         espacio compartido   (cris/ y melck/ igual)
-    (app)/ver/[space]      vista de SOLO LECTURA de cualquier tablero (/ver → /ver/shared); PÚBLICA, no pide login
+    (app)/page.tsx         PORTADA pública: tablero compartido en solo lectura
+    (app)/ver/[space]      solo lectura pública de cris|melck (shared → /); /ver → /
+    (app)/editar/[space]   tableros EDITABLES (exigen login; editas el tuyo y el compartido); /editar → /editar/shared
   features/board/
     SpaceBoard.tsx         (server) carga items del espacio + calcula canEdit
     BoardClient.tsx        estado de items, diálogos, realtime, botones
@@ -58,7 +59,7 @@ scripts/cut-assets.py      genera esos recortes desde los originales en public/ 
 - Calidad: no usar `next/image` para el tablero/recortes (reencodaría); el zoom máximo se limita para no ampliar más de ~2× el corcho (1536 px de origen). `tablero.jpeg`/`tablero2.png` en public/ son los originales (no se usan).
 - Click sin arrastrar en una polaroid abre el detalle; arrastrar la mueve y guarda al soltar.
 - Letrero: Cris y compartido usan `aviso-cris`, Melck `aviso-melck` (config en `SPACES`). La zona del letrero está reservada al colocar tarjetas nuevas (`BANNER` en placement.ts); las tarjetas pueden arrastrarse encima y lo tapan.
-- `/ver/[space]`: mismo tablero con `canEdit=false` para todos (ni siquiera el dueño edita); el nav cambia a esas rutas y muestra "Solo lectura · Editar". Es pública para que alguien externo pueda mirar: `proxy` deja pasar `/ver` (`PUBLIC_PREFIXES`) y la migración 0003 da `select` a `anon` en `items`. Escribir sigue exigiendo sesión con perfil (RLS). Ojo: cualquiera con el enlace ve los 3 tableros completos, incluidos los regalos.
+- Rutas: `/` y `/ver/*` son de solo lectura (`readOnly` → `canEdit=false` para todos); `/editar/*` exige sesión. `SpaceNav` cambia sus enlaces según la ruta y `ModeLink` (abajo a la izquierda) ofrece "Iniciar sesión para editar" / "Editar mi tablero" / "Ver como visitante". Tras el login se va a `/editar/<su tablero>`; `/cris` y `/melck` redirigen a `/ver/*`. La lectura es pública para que alguien externo pueda mirar: `proxy` deja pasar `/ver` (`PUBLIC_PREFIXES`) y la migración 0003 da `select` a `anon` en `items`. Escribir sigue exigiendo sesión con perfil (RLS). Ojo: cualquiera con el enlace ve los 3 tableros completos, incluidos los regalos.
 - Autocompletar: en el formulario, pegar un enlace llama a `/api/link-preview` (Open Graph + JSON-LD) y `/api/link-image`; ambos exigen sesión y bloquean IPs privadas (SSRF, `lib/safeFetch.ts`). Solo rellena campos vacíos; si el sitio bloquea (p. ej. sin precio en Open Graph) se completa a mano.
 - Móvil: nav compacta (nombres cortos), zoom inicial 0.36 sobre el letrero en pantallas <640 px, formulario sin rotación. Los gestos táctiles reales (pellizco) no se probaron: el navegador de pruebas emula con ratón.
 - Los enlaces solo se renderizan si son `http(s)`.

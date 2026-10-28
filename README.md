@@ -4,8 +4,8 @@ Tablero de deseos para dos personas: tres tableros de corcho (Cris, Melck y uno 
 artículo, entrada de cine o viaje es una tarjeta pegada con pin o ganchito. Se mueven, se acercan y se
 actualizan en vivo entre las dos cuentas. Hecho con Next.js 16, Tailwind 4 y Supabase.
 
-- `/`, `/cris`, `/melck`: tableros editables (requieren iniciar sesión; cada quien edita el suyo y el compartido).
-- `/ver`: vista de solo lectura de los tres tableros, pública.
+- `/` (portada) y `/ver/cris`, `/ver/melck`: solo lectura, públicos. Abajo hay un botón para iniciar sesión.
+- `/editar/*`: tableros editables (requieren iniciar sesión; cada quien edita el suyo y el compartido).
 - Al agregar un artículo se puede pegar un enlace y se rellenan nombre, foto y precio cuando el sitio lo permite.
 
 ## Puesta en marcha

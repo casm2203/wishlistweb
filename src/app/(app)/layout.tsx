@@ -1,6 +1,6 @@
 import { Suspense } from "react";
+import { ModeLink } from "@/components/ModeLink";
 import { SpaceNav } from "@/components/SpaceNav";
-import Link from "next/link";
 import { getViewer } from "@/lib/auth";
 import { signOut } from "@/app/login/actions";
 
@@ -25,23 +25,17 @@ async function Shell({ children }: { children: React.ReactNode }) {
       {children}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-2 p-3">
         <div className="pointer-events-auto">
-          <SpaceNav loggedIn={loggedIn} />
+          <SpaceNav />
         </div>
-        {loggedIn ? (
+        {loggedIn && (
           <form action={signOut} className="pointer-events-auto">
             <button className="rounded-full bg-white/90 px-3 py-2.5 text-sm text-stone-700 shadow-md sm:py-2 hover:bg-white">
               Salir<span className="hidden sm:inline"> ({owner === "cris" ? "Cris" : "Melck"})</span>
             </button>
           </form>
-        ) : (
-          <Link
-            href="/login"
-            className="pointer-events-auto rounded-full bg-stone-900 px-3 py-2.5 text-sm text-white shadow-md sm:px-4 sm:py-2 hover:bg-stone-700"
-          >
-            Entrar<span className="hidden sm:inline"> · Iniciar sesión</span>
-          </Link>
         )}
       </header>
+      <ModeLink loggedIn={loggedIn} owner={owner} />
     </div>
   );
 }

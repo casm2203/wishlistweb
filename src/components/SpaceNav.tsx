@@ -3,17 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SPACES, SPACE_ORDER } from "@/lib/spaces";
+import type { Space } from "@/lib/types";
 
 const pill = "rounded-full px-2.5 py-2 text-sm whitespace-nowrap sm:px-4 sm:py-1.5";
 
-/** Pestañas de los tres tableros. En /ver/* apuntan a la vista de solo lectura. */
-export function SpaceNav({ loggedIn }: { loggedIn: boolean }) {
+/** El compartido es la portada pública; Cris y Melck se ven en /ver/*; la edición vive en /editar/*. */
+const viewHref = (s: Space) => (s === "shared" ? "/" : `/ver/${s}`);
+const editHref = (s: Space) => `/editar/${s}`;
+
+/** Pestañas de los tres tableros, en modo lectura o edición según la ruta. */
+export function SpaceNav() {
   const pathname = usePathname();
-  const readOnly = pathname.startsWith("/ver");
+  const editing = pathname.startsWith("/editar");
   return (
     <nav className="flex items-center gap-1 rounded-full bg-white/90 p-1 shadow-md">
       {SPACE_ORDER.map((s) => {
-        const href = readOnly ? `/ver/${s}` : SPACES[s].href;
+        const href = editing ? editHref(s) : viewHref(s);
         const active = pathname === href;
         return (
           <Link
@@ -27,20 +32,6 @@ export function SpaceNav({ loggedIn }: { loggedIn: boolean }) {
           </Link>
         );
       })}
-      {loggedIn && (
-        <>
-          <span className="mx-0.5 h-5 w-px bg-stone-300" aria-hidden />
-          <Link
-            href={readOnly ? "/" : "/ver/shared"}
-            className={`${pill} ${readOnly ? "bg-amber-200 text-amber-950" : "text-stone-600 hover:bg-stone-200"}`}
-            title={readOnly ? "Volver a editar" : "Ver cualquier tablero sin poder editar"}
-          >
-            <span aria-hidden>👁</span>
-            <span className="hidden sm:inline"> {readOnly ? "Solo lectura · Editar" : "Solo ver"}</span>
-            <span className="sr-only sm:hidden">{readOnly ? "Solo lectura, volver a editar" : "Solo ver"}</span>
-          </Link>
-        </>
-      )}
     </nav>
   );
 }
