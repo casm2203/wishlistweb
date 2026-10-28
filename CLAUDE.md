@@ -45,6 +45,7 @@ scripts/cut-assets.py      genera esos recortes desde los originales en public/ 
 
 ## Despliegue
 - Repo público: https://github.com/casm2203/wishlistweb (rama `main`). Commits con el correo noreply de GitHub; `.env*` y `design-src/` están en `.gitignore`.
+- Dominio propio: https://wishlist.cristiansuarez.me (CNAME `wishlist` → `9d8dfe04f2c3d43d.vercel-dns-017.com` en Porkbun, que aloja el DNS de cristiansuarez.me; dominio añadido al proyecto de Vercel).
 - Producción en Vercel: https://wishlistweb.vercel.app (proyecto `wishlistweb`, equipo `casm2203s-projects`, conectado al repo: cada push a `main` despliega). `vercel.json` fija `framework: nextjs` (sin eso Vercel lo servía como estático y daba 404).
 - Variables en Vercel (Production/Preview/Development): `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (públicas por diseño). Nunca subir claves `service_role`.
 - Se usó la CLI de Vercel (`vercel deploy --prod --scope casm2203s-projects`); el MCP de Vercel no tiene permiso de escritura en esa cuenta.
