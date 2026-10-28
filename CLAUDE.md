@@ -43,6 +43,12 @@ scripts/make-favicon.py    genera icon.svg, favicon.ico y apple-icon.png (✨ do
 scripts/cut-assets.py      genera esos recortes desde los originales en public/ (requiere Pillow)
 ```
 
+## Despliegue
+- Repo público: https://github.com/casm2203/wishlistweb (rama `main`). Commits con el correo noreply de GitHub; `.env*` y `design-src/` están en `.gitignore`.
+- Producción en Vercel: https://wishlistweb.vercel.app (proyecto `wishlistweb`, equipo `casm2203s-projects`, conectado al repo: cada push a `main` despliega). `vercel.json` fija `framework: nextjs` (sin eso Vercel lo servía como estático y daba 404).
+- Variables en Vercel (Production/Preview/Development): `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (públicas por diseño). Nunca subir claves `service_role`.
+- Se usó la CLI de Vercel (`vercel deploy --prod --scope casm2203s-projects`); el MCP de Vercel no tiene permiso de escritura en esa cuenta.
+
 ## Reglas de negocio
 - Ambos **ven** los 3 espacios; **editan** solo el propio y el compartido (RLS en `items`; `canEdit` en UI es solo comodidad).
 - Item: `category` (articulo | cine | viaje, define el fondo y tamaño en `CATEGORIES` de `lib/spaces.ts`), nombre, descripción, precio+moneda, enlace, foto, `needs_locker` (casillero), `kind` (want/buy/gift), `status` (pending/reserved/bought), posición x/y/rotación en coordenadas del mundo.
@@ -52,6 +58,8 @@ scripts/cut-assets.py      genera esos recortes desde los originales en public/ 
 - Click sin arrastrar en una polaroid abre el detalle; arrastrar la mueve y guarda al soltar.
 - Letrero: Cris y compartido usan `aviso-cris`, Melck `aviso-melck` (config en `SPACES`). La zona del letrero está reservada al colocar tarjetas nuevas (`BANNER` en placement.ts); las tarjetas pueden arrastrarse encima y lo tapan.
 - `/ver/[space]`: mismo tablero con `canEdit=false` para todos (ni siquiera el dueño edita); el nav cambia a esas rutas y muestra "Solo lectura · Editar". Es pública para que alguien externo pueda mirar: `proxy` deja pasar `/ver` (`PUBLIC_PREFIXES`) y la migración 0003 da `select` a `anon` en `items`. Escribir sigue exigiendo sesión con perfil (RLS). Ojo: cualquiera con el enlace ve los 3 tableros completos, incluidos los regalos.
+- Autocompletar: en el formulario, pegar un enlace llama a `/api/link-preview` (Open Graph + JSON-LD) y `/api/link-image`; ambos exigen sesión y bloquean IPs privadas (SSRF, `lib/safeFetch.ts`). Solo rellena campos vacíos; si el sitio bloquea (p. ej. sin precio en Open Graph) se completa a mano.
+- Móvil: nav compacta (nombres cortos), zoom inicial 0.36 sobre el letrero en pantallas <640 px, formulario sin rotación. Los gestos táctiles reales (pellizco) no se probaron: el navegador de pruebas emula con ratón.
 - Los enlaces solo se renderizan si son `http(s)`.
 
 ## Convenciones
