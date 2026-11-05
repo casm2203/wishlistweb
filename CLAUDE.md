@@ -1,7 +1,7 @@
 # Wishlist Cris & Melck
 
 Web de deseos para dos personas (Cris y Melck) con **3 espacios** (cris, compartido, melck). Portada pública de solo lectura en `/`; edición con login en `/editar/*`.
-Cada espacio es un **tablero de corcho con marco** (imagen `public/tablero-hd.jpg`, 1536×1024, tamaño fijo) donde cada artículo es una tarjeta pegada con pin/ganchito: **artículo** (polaroid), **cine** (ticket) o **viaje** (boarding pass).
+Cada espacio es un **tablero de corcho con marco hecho en CSS** (fondo de la página blanco, scroll normal) donde cada artículo es una tarjeta pegada con pin, cinta o clip. Categorías y estilos: **artículo** (polaroid, estampita), **cine** (boleta, tira de película), **viaje** (correo aéreo), **nota** (post-it, cuaderno, notita clásica, ficha). Diseño de referencia: el prototipo HTML que Cris compartió como artefacto de Claude (ya implementado por fases A–B; fases C —bandeja de creación y hoja de cuaderno— y D —reserva con sesión— hechas).
 
 > Next.js 16 con cambios incompatibles (ver `AGENTS.md`): antes de tocar APIs de Next lee `node_modules/next/dist/docs/`.
 > Aquí: `middleware` → **`src/proxy.ts`**, Cache Components activado (todo acceso a `cookies()`/datos va dentro de `<Suspense>`), `LayoutProps<"/">` global.
@@ -27,21 +27,23 @@ src/
     (app)/editar/[space]   tableros EDITABLES (exigen login; editas el tuyo y el compartido); /editar → /editar/shared
   features/board/
     SpaceBoard.tsx         (server) carga items del espacio + calcula canEdit
-    BoardClient.tsx        estado de items, diálogos, realtime, botones
-    BoardCanvas.tsx        tablero fijo 2400×1600 con pan/zoom (ref + transform directo al DOM); zoom mín = ver todo, máx = 1.25
-    Banner.tsx             letrero con el nombre del espacio (arriba al centro; `public/avisos/*.webp`, recortes con scripts/cut-banners.py)
-    BoardItem.tsx          tarjeta arrastrable (polaroid/ticket + pin o ganchito); sin texto si zoom < TEXT_ZOOM (0.6)
-    ItemForm.tsx           formulario (pegar foto con Ctrl/⌘+V, arrastrar o elegir archivo)
-    ItemView.tsx           detalle completo al seleccionar una polaroid
-    items.ts               CRUD + subida de foto (cliente, protegido por RLS)
-    placement.ts           tamaño del tablero, zona útil de corcho (PLAY), clamp y hueco libre en espiral
+    BoardClient.tsx        estado de items, diálogos, realtime, FAB "+ pegar algo" (dentro del tablero, abajo a la derecha), gestos → guarda con layoutItem
+    BoardStage.tsx         corcho de ancho lógico 1200; en escritorio el tablero tiene alto fijo (ancho/1.75) y se escala (k ≤ 2.5) para que todas las tarjetas quepan sin scroll; en móvil k ≥ 0.6 y se desliza; `ScaleContext`
+    Sign.tsx               letrero de madera con nombre y subtítulo del espacio
+    cards.tsx              `Card`: todos los estilos de tarjeta en CSS + sujetador (pin/cinta/clip) + sellos + insignia de casillero
+    BoardItem.tsx          posición de la tarjeta: arrastrar, pellizco (tamaño+giro), Ctrl+rueda (tamaño), Shift+rueda (giro); clic = detalle
+    ItemForm.tsx           formulario con vista previa viva, estilo/papel/tinta/sujetador/emoji/código/inclinación (pegar foto con Ctrl/⌘+V)
+    ItemView.tsx           detalle completo
+    items.ts               CRUD + `layoutItem` (x,y,scale,rotation,z) + subida de foto (cliente, protegido por RLS)
+    actions.ts             server actions para los UPDATE (mover, editar, estado): el navegador no puede hacer PATCH a Supabase (CORS), así que van por el servidor
+    placement.ts           ancho lógico, `box()` (tamaño visual con escala), clamp y primer hueco libre (izq→der, arriba→abajo)
     image.ts               redimensiona fotos a JPEG ≤ 900px
+  app/board.css            marco, corcho, encaje, pestañas, letrero, tarjetas, sellos, FAB (clases globales del diseño)
+  components/              SpaceNav (pestañas de papel) · BoardMenu (hamburguesa de papel arriba a la derecha: ver como visitante / editar / acomodar tarjetas / salir)
   lib/  types.ts · spaces.ts (etiquetas, tipos, monedas) · auth.ts · supabase/{client,server,session}.ts
-supabase/migrations/       0001 esquema + RLS + bucket `item-images` · 0002 columna `category` · 0003 lectura pública de `items`
+supabase/migrations/       0001 esquema + RLS + bucket `item-images` · 0002 `category` · 0003 lectura pública de `items` · 0004 reubica tarjetas al corcho de 1200 · 0005 estilo/papel/tinta/sujetador/escala/z/emoji/bg/code + categoría `nota` · 0006 RPC `reserve_item` (reservar/liberar en el tablero ajeno, solo con sesión y perfil; no guarda quién) · 0007 reacomoda las tarjetas en filas (opcional; la app también lo hace con «Acomodar tarjetas»)
 design-src/                originales sin procesar (NO van al repo ni se sirven; ver .gitignore)
-public/pins, public/tickets  recortes con transparencia (pines, ganchito, ticket cine, boarding pass)
 scripts/make-favicon.py    genera icon.svg, favicon.ico y apple-icon.png (✨ dorado)
-scripts/cut-assets.py      genera esos recortes desde los originales en public/ (requiere Pillow)
 ```
 
 ## Despliegue
@@ -56,7 +58,7 @@ scripts/cut-assets.py      genera esos recortes desde los originales en public/ 
 - Item: `category` (articulo | cine | viaje, define el fondo y tamaño en `CATEGORIES` de `lib/spaces.ts`), nombre, descripción, precio+moneda, enlace, foto, `needs_locker` (casillero), `kind` (want/buy/gift), `status` (pending/reserved/bought), posición x/y/rotación en coordenadas del mundo.
 - Navegación del tablero: arrastrar fondo = mover; Ctrl/⌘+rueda, pellizco, `+`/`-` o botones = zoom; "Ver todo" encuadra. El tablero nunca se sale de la vista y las tarjetas no pueden salir del corcho.
 - Pin: el color es "aleatorio" pero estable (`pinFor(id)` en `lib/spaces.ts`, hash del id sobre los 9 colores); ya no indica la intención, eso se ve en el detalle. Los viajes usan el ganchito. El casillero solo aplica a artículos.
-- Calidad: no usar `next/image` para el tablero/recortes (reencodaría); el zoom máximo se limita para no ampliar más de ~2× el corcho (1536 px de origen). `tablero.jpeg`/`tablero2.png` en public/ son los originales (no se usan).
+- Calidad: el tablero es solo CSS/SVG (sin imágenes de fondo); las fotos de artículos no pasan por `next/image` (reencodaría).
 - Click sin arrastrar en una polaroid abre el detalle; arrastrar la mueve y guarda al soltar.
 - Letrero: Cris y compartido usan `aviso-cris`, Melck `aviso-melck` (config en `SPACES`). La zona del letrero está reservada al colocar tarjetas nuevas (`BANNER` en placement.ts); las tarjetas pueden arrastrarse encima y lo tapan.
 - Rutas: `/` y `/ver/*` son de solo lectura (`readOnly` → `canEdit=false` para todos); `/editar/*` exige sesión. `SpaceNav` cambia sus enlaces según la ruta y `ModeLink` (abajo a la izquierda) ofrece "Iniciar sesión para editar" / "Editar mi tablero" / "Ver como visitante". Tras el login se va a `/editar/<su tablero>`; `/cris` y `/melck` redirigen a `/ver/*`. La lectura es pública para que alguien externo pueda mirar: `proxy` deja pasar `/ver` (`PUBLIC_PREFIXES`) y la migración 0003 da `select` a `anon` en `items`. Escribir sigue exigiendo sesión con perfil (RLS). Ojo: cualquiera con el enlace ve los 3 tableros completos, incluidos los regalos.
@@ -77,7 +79,7 @@ scripts/cut-assets.py      genera esos recortes desde los originales en public/ 
 - [ ] Revisar con el usuario: pines sin usar (negro, rosa, cian, amarillo, menta, morado), zona de texto de los tickets y capacidad (~35-40 artículos por tablero).
 - [ ] Si algún día /ver debe ser privada otra vez: quitar `/ver` de `PUBLIC_PREFIXES` y borrar la policy "leer items publico" (migración 0003).
 - [ ] Probar el pegado real con Ctrl/⌘+V (se probó subiendo archivo), editar/eliminar desde la UI y cambiar estados.
-- [ ] Permitir a la otra persona **reservar/marcar comprado** un item en el espacio ajeno (hoy RLS solo deja editar el propio; requiere policy/RPC que limite a la columna `status`).
+- [x] Reservar en el espacio ajeno vía RPC `reserve_item` (solo pending↔reserved; visitantes sin sesión ven "Inicia sesión para reservarlo"). Falta probarlo con sesión real; "comprado" lo marca solo el dueño.
 - [ ] Borrar de Storage la foto al eliminar/reemplazar un item.
 - [ ] Zoom con rueda simple para usuarios de mouse (hoy rueda = mover; zoom = Ctrl/⌘+rueda).
 - [ ] Minimapa y selección múltiple en el tablero.

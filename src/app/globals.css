@@ -1,11 +1,11 @@
 @import "tailwindcss";
+@import "./board.css";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-dm);
   --font-hand: var(--font-caveat);
 }
 
 body {
-  background: #2a1c10;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-dm), system-ui, sans-serif;
 }

@@ -1,70 +1,72 @@
-import { CATEGORIES } from "@/lib/spaces";
-import type { Item, ItemCategory } from "@/lib/types";
+import { STYLES, styleOf } from "@/lib/spaces";
+import type { Item } from "@/lib/types";
 
-/** Misma proporción que `tablero-hd.jpg` (1536×1024). Con el zoom máximo el corcho se amplía ≤2× respecto a la foto. */
-export const BOARD_W = 2400;
-export const BOARD_H = 1600;
+/** Ancho lógico del corcho; se escala para encajar en pantalla (ver BoardStage). */
+export const WORLD_W = 1200;
+/** Alto mínimo del corcho: con el letrero de arriba, el tablero completo es 19:10 (ver `.board`). */
+/** Todas las tarjetas se dibujan al 90 % de su tamaño base (se multiplica por la escala de cada una). */
+export const CARD_K = 0.9;
+const MIN_H = 440;
+/** Margen superior: los pines, cintas y clips sobresalen por encima de la tarjeta. */
+const MIN_Y = 40;
 
-/** Zona de corcho útil (dentro del marco de madera de la imagen), como fracción del tablero. */
-const PLAY = { l: 0.032, r: 0.968, t: 0.065, b: 0.95 };
+/** Lo mínimo de una tarjeta para colocarla: su categoría, estilo y escala determinan el tamaño. */
+type Shape = Pick<Item, "category" | "style" | "scale">;
+type Placed = Shape & Pick<Item, "x" | "y">;
 
-/** Letrero con el nombre del espacio, arriba al centro (alto máximo de los dos recortes). */
-export const BANNER = { w: 960, h: 246, x: (BOARD_W - 960) / 2, y: 64 };
+/** Lo que ocupa la tarjeta en pantalla: la escala se aplica desde su centro, así que se sale de (x, y) por igual a los lados. */
+function box(shape: Shape, x: number, y: number) {
+  const b = STYLES[styleOf(shape)];
+  const k = shape.scale * CARD_K;
+  return { l: x - (b.w * (k - 1)) / 2, t: y - (b.h * (k - 1)) / 2, w: b.w * k, h: b.h * k };
+}
 
-const GAP = 50;
-const STEP = 60;
+/** Alto del corcho: lo que ocupan las tarjetas más un margen para seguir pegando abajo. */
+export function worldHeight(items: Placed[]) {
+  const bottom = items.reduce((m, i) => {
+    const b = box(i, i.x, i.y);
+    return Math.max(m, b.t + b.h);
+  }, 0);
+  return Math.max(MIN_H, Math.round(bottom + 20));
+}
 
-export const sizeOf = (category: ItemCategory) => CATEGORIES[category];
+/** Acomoda las tarjetas en filas de izquierda a derecha (por categoría y fecha); devuelve la nueva posición de cada una. */
+export function packRows(items: Item[]): Map<string, { x: number; y: number }> {
+  const order = ["articulo", "cine", "viaje", "nota"];
+  const sorted = [...items].sort(
+    (a, b) => order.indexOf(a.category) - order.indexOf(b.category) || a.created_at.localeCompare(b.created_at),
+  );
+  const GAP = 40;
+  const out = new Map<string, { x: number; y: number }>();
+  let cx = 60;
+  let cy = MIN_Y + 20;
+  let rowH = 0;
+  for (const it of sorted) {
+    const b = box(it, 0, 0);
+    if (cx + b.w > WORLD_W - 60 && cx > 60) {
+      cx = 60;
+      cy += rowH + GAP;
+      rowH = 0;
+    }
+    // (x, y) es la esquina sin escalar: la escala se aplica desde el centro.
+    out.set(it.id, { x: Math.round(cx - b.l), y: Math.round(cy - b.t) });
+    cx += b.w + GAP;
+    rowH = Math.max(rowH, b.h);
+  }
+  return out;
+}
 
-/** Mantiene la tarjeta dentro del corcho. */
-export function clampToBoard(category: ItemCategory, x: number, y: number) {
-  const { w, h } = sizeOf(category);
-  return {
-    x: Math.min(Math.max(x, BOARD_W * PLAY.l), BOARD_W * PLAY.r - w),
-    y: Math.min(Math.max(y, BOARD_H * PLAY.t), BOARD_H * PLAY.b - h),
-  };
+/** Mantiene la tarjeta dentro del ancho del corcho (hacia abajo no hay límite). */
+export function clampToBoard(shape: Shape, x: number, y: number) {
+  const b = STYLES[styleOf(shape)];
+  const k = shape.scale * CARD_K;
+  const d = (b.w * (k - 1)) / 2;
+  const minX = d;
+  const maxX = Math.max(minX, WORLD_W - b.w - d);
+  return { x: Math.min(Math.max(x, minX), maxX), y: Math.max(y, MIN_Y + (b.h * (k - 1)) / 2) };
 }
 
 export function clampItem(item: Item): Item {
-  const { x, y } = clampToBoard(item.category, item.x, item.y);
+  const { x, y } = clampToBoard(item, item.x, item.y);
   return x === item.x && y === item.y ? item : { ...item, x, y };
-}
-
-function overlaps(items: Item[], category: ItemCategory, x: number, y: number) {
-  const { w, h } = sizeOf(category);
-  const onBanner =
-    x < BANNER.x + BANNER.w + GAP && x + w + GAP > BANNER.x && y < BANNER.y + BANNER.h + GAP && y + h + GAP > BANNER.y;
-  if (onBanner) return true;
-  return items.some((i) => {
-    const o = sizeOf(i.category);
-    return x < i.x + o.w + GAP && x + w + GAP > i.x && y < i.y + o.h + GAP && y + h + GAP > i.y;
-  });
-}
-
-/** Busca en espiral, desde el centro de la vista, el primer hueco libre dentro del corcho. */
-export function findFreeSpot(items: Item[], category: ItemCategory, cx: number, cy: number) {
-  const { w, h } = sizeOf(category);
-  const start = clampToBoard(category, cx - w / 2, cy - h / 2);
-  for (let ring = 0; ring < 60; ring++) {
-    for (let dy = -ring; dy <= ring; dy++) {
-      for (let dx = -ring; dx <= ring; dx++) {
-        if (Math.max(Math.abs(dx), Math.abs(dy)) !== ring) continue;
-        const x = start.x + dx * STEP;
-        const y = start.y + dy * STEP;
-        const c = clampToBoard(category, x, y);
-        if (c.x !== x || c.y !== y) continue; // fuera del corcho
-        if (!overlaps(items, category, x, y)) return jitter(category, x, y);
-      }
-    }
-  }
-  return jitter(category, start.x, start.y);
-}
-
-function jitter(category: ItemCategory, x: number, y: number) {
-  const j = clampToBoard(category, x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20);
-  return {
-    x: Math.round(j.x),
-    y: Math.round(j.y),
-    rotation: Math.round((Math.random() - 0.5) * 8 * 10) / 10,
-  };
 }

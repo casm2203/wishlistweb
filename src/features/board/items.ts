@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Item, ItemDraft, Space } from "@/lib/types";
+import { layoutItemAction, setItemStatusAction, updateItemAction } from "./actions";
 
 const BUCKET = "item-images";
 
@@ -24,13 +25,22 @@ function fields(draft: ItemDraft) {
     needs_locker: draft.needs_locker,
     kind: draft.kind,
     status: draft.status,
+    rotation: draft.rotation,
+    style: draft.style,
+    paper: draft.paper,
+    ink: draft.ink,
+    holder: draft.holder,
+    holder_color: draft.holder_color,
+    bg: draft.bg,
+    emoji: draft.emoji,
+    code: draft.code,
   };
 }
 
 export async function createItem(
   space: Space,
   draft: ItemDraft,
-  pos: { x: number; y: number; rotation: number },
+  pos: { x: number; y: number; scale: number; z: number },
 ): Promise<Item> {
   const supabase = createClient();
   const image_url = draft.image ? await uploadImage(draft.image) : null;
@@ -44,32 +54,26 @@ export async function createItem(
 }
 
 export async function updateItem(item: Item, draft: ItemDraft): Promise<Item> {
-  const supabase = createClient();
   let image_url = item.image_url;
   if (draft.image) image_url = await uploadImage(draft.image);
   else if (draft.removeImage) image_url = null;
-  const { data, error } = await supabase
-    .from("items")
-    .update({ ...fields(draft), image_url })
-    .eq("id", item.id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data as Item;
+  return updateItemAction(item.id, { ...fields(draft), image_url });
 }
 
-export async function moveItem(id: string, x: number, y: number) {
-  const { error } = await createClient().from("items").update({ x, y }).eq("id", id);
-  if (error) throw error;
+/** Posición, tamaño, giro y orden de apilado: lo que cambia al arrastrar o pellizcar una tarjeta. */
+export type Layout = Pick<Item, "x" | "y" | "scale" | "rotation" | "z">;
+
+export async function layoutItem(id: string, patch: Partial<Layout>) {
+  await layoutItemAction(id, patch);
 }
 
 export async function setItemStatus(id: string, status: Item["status"]): Promise<Item> {
-  const { data, error } = await createClient()
-    .from("items")
-    .update({ status })
-    .eq("id", id)
-    .select()
-    .single();
+  return setItemStatusAction(id, status);
+}
+
+/** Reserva (o libera) un regalo del tablero ajeno; la función SQL valida sesión, espacio y estado. */
+export async function reserveItem(id: string, reserve: boolean): Promise<Item> {
+  const { data, error } = await createClient().rpc("reserve_item", { item_id: id, reserve });
   if (error) throw error;
   return data as Item;
 }

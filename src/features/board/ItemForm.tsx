@@ -1,29 +1,61 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CATEGORIES, CATEGORY_ORDER, CURRENCIES, KINDS, STATUSES } from "@/lib/spaces";
-import type { Item, ItemCategory, ItemDraft, ItemKind, ItemStatus } from "@/lib/types";
+import {
+  BG_COLORS,
+  CATEGORIES,
+  CATEGORY_ORDER,
+  CURRENCIES,
+  EMOJIS,
+  HOLDERS,
+  INKS,
+  KINDS,
+  STATUSES,
+  STYLES,
+  holderOf,
+  styleOf,
+} from "@/lib/spaces";
+import type { CardStyle, HolderKind, Item, ItemCategory, ItemDraft, ItemKind, ItemStatus } from "@/lib/types";
+import { Card } from "./cards";
+import { MAX_TILT } from "./BoardItem";
+import { Sheet } from "./Sheet";
+import { Swatches } from "./Swatches";
 import { resizeImage } from "./image";
 
+/** Lo que ya se decidió en la bandeja: al crear, el formulario solo pide los datos. */
+export type Seed = Pick<ItemDraft, "category" | "style" | "paper" | "ink" | "holder" | "holder_color" | "rotation">;
+
 interface Props {
+  /** Edición: muestra también los controles de estilo. */
   item?: Item;
+  /** Creación desde la bandeja: estilo ya elegido. */
+  seed?: Seed;
   onSubmit: (draft: ItemDraft) => Promise<void>;
   onCancel: () => void;
 }
 
-const input =
-  "w-full rounded border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-900 outline-none focus:border-stone-500";
-
-export function ItemForm({ item, onSubmit, onCancel }: Props) {
-  const [category, setCategory] = useState<ItemCategory>(item?.category ?? "articulo");
+/** Hoja con vista previa viva y los datos de una tarjeta. */
+export function ItemForm({ item, seed, onSubmit, onCancel }: Props) {
+  const start = item ?? seed;
+  const editing = !!item;
+  const [category, setCategory] = useState<ItemCategory>(start?.category ?? "articulo");
   const [name, setName] = useState(item?.name ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
   const [price, setPrice] = useState(item?.price?.toString() ?? "");
-  const [currency, setCurrency] = useState(item?.currency ?? "USD");
+  const [currency, setCurrency] = useState(item?.currency ?? "COP");
   const [url, setUrl] = useState(item?.url ?? "");
   const [kind, setKind] = useState<ItemKind>(item?.kind ?? "want");
   const [status, setStatus] = useState<ItemStatus>(item?.status ?? "pending");
   const [needsLocker, setNeedsLocker] = useState(item?.needs_locker ?? false);
+  const [style, setStyle] = useState<CardStyle | null>(start?.style ?? null);
+  const [paper, setPaper] = useState<string | null>(start?.paper ?? null);
+  const [ink, setInk] = useState<string | null>(start?.ink ?? null);
+  const [holder, setHolder] = useState<HolderKind | null>(start?.holder ?? null);
+  const [holderColor, setHolderColor] = useState<string | null>(start?.holder_color ?? null);
+  const [emoji, setEmoji] = useState<string | null>(item?.emoji ?? null);
+  const [bg, setBg] = useState<string | null>(item?.bg ?? null);
+  const [code, setCode] = useState(item?.code ?? "");
+  const [rotation, setRotation] = useState(() => start?.rotation ?? Math.round((Math.random() - 0.5) * 9 * 10) / 10);
   const [image, setImage] = useState<Blob | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
   const [preview, setPreview] = useState<string | null>(item?.image_url ?? null);
@@ -32,6 +64,53 @@ export function ItemForm({ item, onSubmit, onCancel }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [fetching, setFetching] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+
+  const meta = CATEGORIES[category];
+  const lockerOk = category === "articulo";
+
+  /** Cada categoría trae sus estilos y papeles: al cambiarla se vuelve a los valores por defecto. */
+  function pickCategory(c: ItemCategory) {
+    setCategory(c);
+    setStyle(null);
+    setPaper(null);
+    setInk(null);
+    setHolder(null);
+    setHolderColor(null);
+  }
+
+  // Tarjeta de prueba con lo que se lleva escrito.
+  const sample: Item = {
+    id: item?.id ?? "00000000-0000-0000-0000-000000000000",
+    space: item?.space ?? "shared",
+    category,
+    name: name || meta.namePlaceholder,
+    description,
+    price: null,
+    currency,
+    url: null,
+    image_url: removeImage ? null : preview,
+    needs_locker: lockerOk && needsLocker,
+    kind,
+    status,
+    x: 0,
+    y: 0,
+    rotation,
+    style,
+    paper,
+    ink,
+    holder,
+    holder_color: holderColor,
+    bg,
+    emoji,
+    code: code || null,
+    scale: 1,
+    z: 1,
+    created_by: null,
+    created_at: "",
+    updated_at: "",
+  };
+  const effStyle = styleOf(sample);
+  const effHolder = holderOf(sample);
 
   async function takeImage(file: Blob) {
     try {
@@ -88,6 +167,7 @@ export function ItemForm({ item, onSubmit, onCancel }: Props) {
   // Pegar (Ctrl/⌘+V) una imagen copiada desde cualquier sitio.
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
+      if (!CATEGORIES[category].photo) return;
       const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith("image/"));
       if (!file) return;
       e.preventDefault();
@@ -110,13 +190,22 @@ export function ItemForm({ item, onSubmit, onCancel }: Props) {
         category,
         name: name.trim(),
         description: description.trim(),
-        price: parsed,
+        price: category === "nota" ? null : parsed,
         currency,
-        url: cleanUrl || null,
-        needs_locker: category === "articulo" && needsLocker,
+        url: category === "nota" ? null : cleanUrl || null,
+        needs_locker: lockerOk && needsLocker,
         kind,
         status,
-        image,
+        rotation,
+        style,
+        paper,
+        ink,
+        holder,
+        holder_color: holderColor,
+        bg,
+        emoji,
+        code: code.trim() ? code.trim().toUpperCase().slice(0, 4) : null,
+        image: meta.photo ? image : null,
         removeImage,
       });
     } catch (err) {
@@ -126,172 +215,284 @@ export function ItemForm({ item, onSubmit, onCancel }: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <div className="flex gap-1.5">
-        {CATEGORY_ORDER.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCategory(c)}
-            className={`flex-1 rounded border px-1 py-1.5 text-sm ${
-              category === c ? "border-stone-800 bg-stone-800 text-white" : "border-stone-300 text-stone-700"
-            }`}
-          >
-            {CATEGORIES[c].label}
-          </button>
-        ))}
-      </div>
-      <div>
-        <div className="flex gap-2">
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onPaste={(e) => {
-              const text = e.clipboardData.getData("text").trim();
-              if (/^https?:\/\/\S+$/i.test(text)) void autofill(text);
-            }}
-            inputMode="url"
-            placeholder="Pega el enlace y lo relleno por ti"
-            className={input}
-          />
-          <button
-            type="button"
-            disabled={fetching || !url.trim()}
-            onClick={() => void autofill(url)}
-            className="shrink-0 rounded border border-stone-400 px-3 text-sm text-stone-800 disabled:opacity-50"
-          >
-            {fetching ? "Leyendo…" : "Autocompletar"}
-          </button>
-        </div>
-        {hint && <p className="mt-1 text-xs text-stone-600">{hint}</p>}
-      </div>
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          const file = [...e.dataTransfer.files].find((f) => f.type.startsWith("image/"));
-          if (file) void takeImage(file);
-        }}
-        className={`relative flex aspect-[4/3] w-full sm:aspect-square items-center justify-center overflow-hidden bg-stone-200 ${
-          dragOver ? "outline-2 outline-dashed outline-amber-600" : ""
-        }`}
-      >
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element -- preview local (blob:)
-          <img src={preview} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <p className="px-6 text-center text-sm text-stone-500">
-            <span className="sm:hidden">Toca «Elegir» para subir la foto</span>
-            <span className="hidden sm:inline">Pega aquí la foto (Ctrl/⌘ + V), arrástrala o elige un archivo</span>
-          </p>
+    <Sheet preview={<Card item={sample} />} onClose={onCancel}>
+      <form className="f" onSubmit={submit}>
+        {editing && (
+          <>
+            <h2 className="q">Cómo se ve</h2>
+            <div className="mini">
+              {CATEGORY_ORDER.map((c) => (
+                <button key={c} type="button" className={category === c ? "on" : ""} onClick={() => pickCategory(c)}>
+                  {CATEGORIES[c].icon} {CATEGORIES[c].label}
+                </button>
+              ))}
+            </div>
+            {meta.styles.length > 1 && (
+              <div className="mini">
+                {meta.styles.map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    className={effStyle === st ? "on" : ""}
+                    onClick={() => {
+                      setStyle(st);
+                      setPaper(null);
+                      setInk(null);
+                      setHolder(null);
+                      setHolderColor(null);
+                    }}
+                  >
+                    {STYLES[st].label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="crow">
+              <span>{effHolder.kind === "none" ? "pegado" : holderLabel(effHolder.kind)}</span>
+              <div className="mini">
+                {(Object.keys(HOLDERS) as Exclude<HolderKind, "none">[]).map((h) => (
+                  <button
+                    key={h}
+                    type="button"
+                    className={effHolder.kind === h ? "on" : ""}
+                    onClick={() => {
+                      setHolder(h);
+                      setHolderColor(null);
+                    }}
+                  >
+                    {HOLDERS[h].label}
+                  </button>
+                ))}
+                <button type="button" className={effHolder.kind === "none" ? "on" : ""} onClick={() => setHolder("none")}>
+                  Nada
+                </button>
+              </div>
+            </div>
+            {effHolder.kind !== "none" && (
+              <div className="crow">
+                <span>color</span>
+                <Swatches colors={HOLDERS[effHolder.kind].colors} value={effHolder.color} onPick={setHolderColor} />
+              </div>
+            )}
+            <div className="crow">
+              <span>fondo</span>
+              <Swatches colors={STYLES[effStyle].papers} value={paper ?? STYLES[effStyle].papers[0]} onPick={setPaper} />
+            </div>
+            {effStyle !== "estampilla" && effStyle !== "pelicula" && (
+              <div className="crow">
+                <span>letra</span>
+                <Swatches colors={INKS} value={ink} onPick={setInk} />
+              </div>
+            )}
+            <label className="tilt">
+              Inclinación
+              <input
+                type="range"
+                min={-MAX_TILT}
+                max={MAX_TILT}
+                step={0.5}
+                value={rotation}
+                onChange={(e) => setRotation(Number(e.target.value))}
+              />
+              <span>{rotation}°</span>
+            </label>
+          </>
         )}
-        <div className="absolute bottom-2 right-2 flex gap-2">
-          <label className="cursor-pointer rounded bg-white/90 px-3 py-2 text-sm text-stone-800 shadow sm:px-2 sm:py-1 sm:text-xs">
-            Elegir
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && void takeImage(e.target.files[0])}
-            />
-          </label>
-          {preview && (
-            <button
-              type="button"
-              onClick={() => {
-                setImage(null);
-                setPreview(null);
-                setRemoveImage(true);
-              }}
-              className="rounded bg-white/90 px-3 py-2 text-sm text-stone-800 shadow sm:px-2 sm:py-1 sm:text-xs"
-            >
-              Quitar
-            </button>
-          )}
-        </div>
-      </div>
 
-      <input
-        required
-        maxLength={120}
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder={CATEGORIES[category].namePlaceholder}
-        className="font-hand w-full border-b border-stone-300 bg-transparent px-1 text-3xl text-stone-900 outline-none focus:border-stone-500"
-      />
-      <textarea
-        rows={3}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Descripción (talla, color, modelo…)"
-        className={input}
-      />
-      <div className="flex gap-2">
-        <input
-          inputMode="decimal"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          placeholder="Precio"
-          className={input}
-        />
-        <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={`${input} w-24`}>
-          {CURRENCIES.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-      </div>
+        <h2 className="q">Cuéntame qué es</h2>
 
-      <div className="flex gap-1.5">
-        {(Object.keys(KINDS) as ItemKind[]).map((k) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setKind(k)}
-            className={`flex-1 rounded border px-1 py-1.5 text-xs ${
-              kind === k ? "border-stone-800 bg-stone-800 text-white" : "border-stone-300 text-stone-700"
-            }`}
+        {meta.photo && (
+          <div>
+            <div className="row">
+              <input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData("text").trim();
+                  if (/^https?:\/\/\S+$/i.test(text)) void autofill(text);
+                }}
+                inputMode="url"
+                placeholder="Pega el enlace y lo relleno por ti"
+              />
+              <button
+                type="button"
+                className="btn soft"
+                style={{ flex: "none", fontSize: 18 }}
+                disabled={fetching || !url.trim()}
+                onClick={() => void autofill(url)}
+              >
+                {fetching ? "Leyendo…" : "Autocompletar"}
+              </button>
+            </div>
+            {hint && <p className="hint">{hint}</p>}
+          </div>
+        )}
+
+        {meta.photo && (
+          <div
+            className={`drop${dragOver ? " over" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const file = [...e.dataTransfer.files].find((f) => f.type.startsWith("image/"));
+              if (file) void takeImage(file);
+            }}
           >
-            {KINDS[k].label}
+            {preview && !removeImage ? (
+              // eslint-disable-next-line @next/next/no-img-element -- preview local (blob:) o foto de Storage
+              <img src={preview} alt="" />
+            ) : (
+              <span>
+                <span className="sm-only">Toca «Elegir» para subir la foto</span>
+                <span className="lg-only">Pega aquí la foto (Ctrl/⌘ + V), arrástrala o elige un archivo</span>
+              </span>
+            )}
+            <div className="pair">
+              <label className="upl">
+                📷 Elegir
+                <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && void takeImage(e.target.files[0])} />
+              </label>
+              {preview && !removeImage && (
+                <button
+                  type="button"
+                  className="upl"
+                  onClick={() => {
+                    setImage(null);
+                    setPreview(null);
+                    setRemoveImage(true);
+                  }}
+                >
+                  Quitar
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="fname">Nombre</label>
+          <input
+            id="fname"
+            required
+            maxLength={120}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={meta.namePlaceholder}
+          />
+        </div>
+
+        {category === "viaje" && (
+          <div>
+            <label htmlFor="fcode">Código del destino (3 letras)</label>
+            <input
+              id="fcode"
+              maxLength={4}
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder={name.replace(/[^a-zA-ZÁÉÍÓÚÑáéíóúñ0-9]/g, "").slice(0, 3).toUpperCase() || "CTG"}
+            />
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="fdesc">{category === "nota" ? "Escribe la notita" : "Descripción"}</label>
+          <textarea
+            id="fdesc"
+            rows={category === "nota" ? 5 : 3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={category === "nota" ? "Escribe la nota…" : "Talla, color, modelo…"}
+          />
+        </div>
+
+        {category !== "nota" && (
+          <>
+            <div className="row">
+              <div>
+                <label htmlFor="fprice">Precio</label>
+                <input id="fprice" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="fcur">Moneda</label>
+                <select id="fcur" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  {CURRENCIES.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {!meta.photo && (
+              <div>
+                <label htmlFor="furl">Link</label>
+                <input id="furl" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
+              </div>
+            )}
+            <div>
+              <span className="lbl">Prioridad</span>
+              <div className="mini">
+                {(Object.keys(KINDS) as ItemKind[]).map((k) => (
+                  <button key={k} type="button" className={kind === k ? "on" : ""} onClick={() => setKind(k)}>
+                    {KINDS[k].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {category !== "nota" && (
+          <div>
+            <span className="lbl">{meta.photo ? "Si no hay foto, se ve este dibujo" : "Dibujo"}</span>
+            <div className="emojis">
+              {EMOJIS.map((e) => (
+                <button key={e} type="button" className={(emoji ?? meta.emoji) === e ? "on" : ""} onClick={() => setEmoji(e)}>
+                  {e}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <Swatches colors={BG_COLORS} value={bg ?? meta.bg} onPick={setBg} />
+            </div>
+          </div>
+        )}
+
+        {lockerOk && (
+          <label className="check">
+            <input type="checkbox" checked={needsLocker} onChange={(e) => setNeedsLocker(e.target.checked)} />
+            📦 Requiere casillero (envío especial)
+          </label>
+        )}
+
+        {editing && (
+          <select value={status} onChange={(e) => setStatus(e.target.value as ItemStatus)}>
+            {(Object.keys(STATUSES) as ItemStatus[]).map((s) => (
+              <option key={s} value={s}>
+                {STATUSES[s]}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {error && <p className="err">{error}</p>}
+
+        <div className="acts" style={{ marginTop: 8 }}>
+          <button type="button" className="btn soft" onClick={onCancel}>
+            {editing ? "cancelar" : "← volver"}
           </button>
-        ))}
-      </div>
-
-      {category === "articulo" && (
-        <label className="flex items-center gap-2 text-sm text-stone-800">
-          <input type="checkbox" checked={needsLocker} onChange={(e) => setNeedsLocker(e.target.checked)} />
-          📦 Requiere casillero (envío especial)
-        </label>
-      )}
-
-      {item && (
-        <select value={status} onChange={(e) => setStatus(e.target.value as ItemStatus)} className={input}>
-          {(Object.keys(STATUSES) as ItemStatus[]).map((s) => (
-            <option key={s} value={s}>
-              {STATUSES[s]}
-            </option>
-          ))}
-        </select>
-      )}
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <div className="flex justify-end gap-2 pt-1">
-        <button type="button" onClick={onCancel} className="px-3 py-1.5 text-sm text-stone-600">
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={busy || !name.trim()}
-          className="rounded bg-stone-800 px-4 py-1.5 text-sm text-white disabled:opacity-50"
-        >
-          {busy ? "Guardando…" : item ? "Guardar" : "Pegar en el tablero"}
-        </button>
-      </div>
-    </form>
+          <button className="btn pinkb" disabled={busy || !name.trim()}>
+            {busy ? "Guardando…" : editing ? "guardar" : "pegar en el tablero"}
+          </button>
+        </div>
+      </form>
+    </Sheet>
   );
+}
+
+function holderLabel(kind: Exclude<HolderKind, "none">) {
+  return kind === "pin" ? "pin" : kind === "tape" ? "cinta" : "clip";
 }

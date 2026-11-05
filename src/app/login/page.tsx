@@ -6,8 +6,7 @@ import { signIn } from "./actions";
 export default function LoginPage() {
   const [error, action, pending] = useActionState(signIn, null);
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[#2a1c10] bg-cover bg-center p-6"
-      style={{ backgroundImage: "url(/tablero-hd.jpg)" }}>
+    <main className="flex min-h-dvh items-center justify-center bg-[#c08548] p-6">
       <form action={action} className="w-full max-w-xs -rotate-1 space-y-3 bg-[#fdfcf8] p-6 shadow-2xl">
         <h1 className="font-hand text-4xl text-stone-900">Nuestra wishlist</h1>
         <input
