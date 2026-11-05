@@ -8,6 +8,7 @@ export type ItemCategory = "articulo" | "cine" | "viaje" | "nota";
 export type CardStyle =
   | "polaroid"
   | "estampilla"
+  | "recibo"
   | "boleta"
   | "pelicula"
   | "correo"

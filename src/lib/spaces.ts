@@ -12,10 +12,10 @@ export const SPACES: Record<
 /** Orden de las pestañas: el compartido va en el centro. */
 export const SPACE_ORDER: Space[] = ["cris", "shared", "melck"];
 
-export const KINDS: Record<ItemKind, { label: string }> = {
-  want: { label: "Lo quiero" },
-  buy: { label: "Por comprar" },
-  gift: { label: "Para regalar" },
+export const KINDS: Record<ItemKind, { label: string; color: string }> = {
+  want: { label: "Lo quiero", color: "#ff8fa3" },
+  buy: { label: "Por comprar", color: "#f6d77a" },
+  gift: { label: "Para regalar", color: "#9fd8bd" },
 };
 
 /** Hash estable del id: de él salen el color del pin/cinta y otros detalles "aleatorios" pero fijos. */
@@ -53,6 +53,7 @@ interface StyleMeta {
 export const STYLES: Record<CardStyle, StyleMeta> = {
   polaroid: { label: "Polaroid", w: 170, h: 226, holder: "tape", papers: ["#fffdf8", "#f6efe0", "#fbe3ea", "#e3eef8", "#2d211a"] },
   estampilla: { label: "Estampita", w: 176, h: 228, holder: "pin", papers: ["#f1e8d4", "#ffffff", "#f6d6dc", "#dbe6f1", "#e6ece2"] },
+  recibo: { label: "Recibo", w: 206, h: 326, holder: "clip", papers: ["#fbfaf6", "#f6efe0", "#fbe9ef", "#eef5fb", "#fff8d6"] },
   boleta: { label: "Boleta", w: 176, h: 352, holder: "pin", papers: ["#111111", "#5a1420", "#1d2f5c", "#2f4a3a", "#f59ba7", "#f3e9d2"] },
   pelicula: { label: "Tira de película", w: 156, h: 388, holder: "tape", papers: ["#111111", "#3a2418", "#5a1420", "#1d2f5c"] },
   correo: { label: "Correo aéreo", w: 184, h: 360, holder: "pin", papers: ["#1d5aa6", "#e3342f", "#2f4a3a", "#d64fa0", "#111111"] },
@@ -77,7 +78,7 @@ interface CategoryMeta {
 }
 
 export const CATEGORIES: Record<ItemCategory, CategoryMeta> = {
-  articulo: { label: "Artículo", icon: "🛍️", styles: ["polaroid", "estampilla"], bg: "#e6eef8", emoji: "🎁", namePlaceholder: "Nombre del artículo", photo: true },
+  articulo: { label: "Artículo", icon: "🛍️", styles: ["polaroid", "estampilla", "recibo"], bg: "#e6eef8", emoji: "🎁", namePlaceholder: "Nombre del artículo", photo: true },
   cine: { label: "Cine", icon: "🎬", styles: ["boleta", "pelicula"], bg: "#b3202a", emoji: "🎬", namePlaceholder: "Película o función", photo: true },
   viaje: { label: "Viaje", icon: "✈️", styles: ["correo"], bg: "#ffffff", emoji: "✈️", namePlaceholder: "Destino", photo: false },
   nota: { label: "Nota", icon: "📝", styles: ["postit", "cuaderno", "clasica", "ficha"], bg: "#fff3a6", emoji: "📝", namePlaceholder: "Título de la nota", photo: false },
@@ -118,3 +119,12 @@ export const STATUSES: Record<ItemStatus, string> = {
 };
 
 export const CURRENCIES = ["USD", "EUR", "COP", "MXN"] as const;
+
+/** Precio con símbolo de moneda (cae a «valor MONEDA» si la moneda no es ISO). */
+export function formatPrice(price: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("es", { style: "currency", currency, maximumFractionDigits: 0 }).format(price);
+  } catch {
+    return `${price} ${currency}`;
+  }
+}

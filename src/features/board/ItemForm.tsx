@@ -15,7 +15,7 @@ import {
   holderOf,
   styleOf,
 } from "@/lib/spaces";
-import type { CardStyle, HolderKind, Item, ItemCategory, ItemDraft, ItemKind, ItemStatus } from "@/lib/types";
+import type { CardStyle, HolderKind, Item, ItemCategory, ItemDraft, ItemKind, ItemStatus, Space } from "@/lib/types";
 import { Card } from "./cards";
 import { MAX_TILT } from "./BoardItem";
 import { Sheet } from "./Sheet";
@@ -30,12 +30,14 @@ interface Props {
   item?: Item;
   /** Creación desde la bandeja: estilo ya elegido. */
   seed?: Seed;
+  /** Espacio donde se pega (para la vista previa). */
+  space?: Space;
   onSubmit: (draft: ItemDraft) => Promise<void>;
   onCancel: () => void;
 }
 
 /** Hoja con vista previa viva y los datos de una tarjeta. */
-export function ItemForm({ item, seed, onSubmit, onCancel }: Props) {
+export function ItemForm({ item, seed, space, onSubmit, onCancel }: Props) {
   const start = item ?? seed;
   const editing = !!item;
   const [category, setCategory] = useState<ItemCategory>(start?.category ?? "articulo");
@@ -81,11 +83,11 @@ export function ItemForm({ item, seed, onSubmit, onCancel }: Props) {
   // Tarjeta de prueba con lo que se lleva escrito.
   const sample: Item = {
     id: item?.id ?? "00000000-0000-0000-0000-000000000000",
-    space: item?.space ?? "shared",
+    space: item?.space ?? space ?? "shared",
     category,
     name: name || meta.namePlaceholder,
     description,
-    price: null,
+    price: category !== "nota" && Number(price.replace(",", ".")) > 0 ? Number(price.replace(",", ".")) : null,
     currency,
     url: null,
     image_url: removeImage ? null : preview,

@@ -16,14 +16,16 @@ export interface StageApi {
 }
 
 /** Corcho de ancho lógico fijo (WORLD_W) escalado para encajar en la página; crece hacia abajo con las tarjetas. */
-export function BoardStage({ height, children, controlRef }: { height: number; children: ReactNode; controlRef?: Ref<StageApi> }) {
+export function BoardStage({ height, children, controlRef, zoom = 1 }: { height: number; children: ReactNode; controlRef?: Ref<StageApi>; zoom?: number }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const k = useRef(1);
   const heightRef = useRef(height);
+  const updateRef = useRef<() => void>(() => {});
   useEffect(() => {
     heightRef.current = height;
   });
+  const zoomRef = useRef(zoom);
   const [scale, setScale] = useState<number | null>(null);
 
   useLayoutEffect(() => {
@@ -35,9 +37,12 @@ export function BoardStage({ height, children, controlRef }: { height: number; c
       if (fit.matches && root.clientHeight > 0) {
         next = Math.min(root.clientWidth / WORLD_W, root.clientHeight / heightRef.current, MAX_K);
       }
+      // Con zoom del usuario no se vuelve a encajar por alto (evita un bucle): ancho del corcho × zoom.
+      if (zoomRef.current !== 1) next = Math.min(MAX_K * 1.6, Math.max(0.25, (root.clientWidth / WORLD_W) * zoomRef.current));
       k.current = next;
       setScale(next);
     };
+    updateRef.current = update;
     update();
     const ro = new ResizeObserver(update);
     ro.observe(root);
@@ -47,6 +52,11 @@ export function BoardStage({ height, children, controlRef }: { height: number; c
       fit.removeEventListener("change", update);
     };
   }, [height]);
+
+  useLayoutEffect(() => {
+    zoomRef.current = zoom;
+    updateRef.current();
+  }, [zoom]);
 
   const getScale = useCallback(() => k.current, []);
 

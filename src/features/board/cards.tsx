@@ -1,4 +1,4 @@
-import { CATEGORIES, SPACES, holderOf, paperOf, styleOf } from "@/lib/spaces";
+import { CATEGORIES, SPACES, formatPrice, holderOf, paperOf, styleOf } from "@/lib/spaces";
 import type { Item } from "@/lib/types";
 
 /** Texto legible sobre un papel: oscuro si el papel es claro y viceversa. */
@@ -75,6 +75,31 @@ function Body({ item }: { item: Item }) {
           </div>
         </div>
       );
+    case "recibo": {
+      const price = item.price ? formatPrice(item.price, item.currency) : "";
+      return (
+        <div className="sh">
+          <div className="rc" style={vars}>
+            <div className="rh">WISHLIST · {SPACES[item.space].sign}</div>
+            <div className="rs">Nº {item.id.slice(0, 5).toUpperCase()}</div>
+            <div className="rp">
+              <Art item={item} />
+            </div>
+            <div className="rl">
+              <span>{item.name || "\u00a0"}</span>
+              <b>{price}</b>
+            </div>
+            <div className="rd" />
+            <div className="rl t">
+              <span>TOTAL</span>
+              <b>{price}</b>
+            </div>
+            <div className="rb bc" />
+            <div className="rt">gracias · vuelve pronto</div>
+          </div>
+        </div>
+      );
+    }
     case "boleta":
       return (
         <div className="sh">

@@ -29,7 +29,7 @@ src/
     SpaceBoard.tsx         (server) carga items del espacio + calcula canEdit
     BoardClient.tsx        estado de items, diálogos, realtime, FAB "+ pegar algo" (dentro del tablero, abajo a la derecha), gestos → guarda con layoutItem
     BoardStage.tsx         corcho de ancho lógico 1200; en escritorio el tablero tiene alto fijo (ancho/1.75) y se escala (k ≤ 2.5) para que todas las tarjetas quepan sin scroll; en móvil k ≥ 0.6 y se desliza; `ScaleContext`
-    Sign.tsx               letrero de madera con nombre y subtítulo del espacio
+    Sign.tsx               título «carta de rescate» (letras en public/letras) + subtítulo del espacio
     cards.tsx              `Card`: todos los estilos de tarjeta en CSS + sujetador (pin/cinta/clip) + sellos + insignia de casillero
     BoardItem.tsx          posición de la tarjeta: arrastrar, pellizco (tamaño+giro), Ctrl+rueda (tamaño), Shift+rueda (giro); clic = detalle
     ItemForm.tsx           formulario con vista previa viva, estilo/papel/tinta/sujetador/emoji/código/inclinación (pegar foto con Ctrl/⌘+V)
@@ -41,7 +41,7 @@ src/
   app/board.css            marco, corcho, encaje, pestañas, letrero, tarjetas, sellos, FAB (clases globales del diseño)
   components/              SpaceNav (pestañas de papel) · BoardMenu (hamburguesa de papel arriba a la derecha: ver como visitante / editar / acomodar tarjetas / salir)
   lib/  types.ts · spaces.ts (etiquetas, tipos, monedas) · auth.ts · supabase/{client,server,session}.ts
-supabase/migrations/       0001 esquema + RLS + bucket `item-images` · 0002 `category` · 0003 lectura pública de `items` · 0004 reubica tarjetas al corcho de 1200 · 0005 estilo/papel/tinta/sujetador/escala/z/emoji/bg/code + categoría `nota` · 0006 RPC `reserve_item` (reservar/liberar en el tablero ajeno, solo con sesión y perfil; no guarda quién) · 0007 reacomoda las tarjetas en filas (opcional; la app también lo hace con «Acomodar tarjetas»)
+supabase/migrations/       0001 esquema + RLS + bucket `item-images` · 0002 `category` · 0003 lectura pública de `items` · 0004 reubica tarjetas al corcho de 1200 · 0005 estilo/papel/tinta/sujetador/escala/z/emoji/bg/code + categoría `nota` · 0006 RPC `reserve_item` (reservar/liberar en el tablero ajeno, solo con sesión y perfil; no guarda quién) · 0008 estilo `recibo` · 0007 reacomoda las tarjetas en filas (opcional; la app también lo hace con «Acomodar tarjetas»)
 design-src/                originales sin procesar (NO van al repo ni se sirven; ver .gitignore)
 scripts/make-favicon.py    genera icon.svg, favicon.ico y apple-icon.png (✨ dorado)
 ```
@@ -58,7 +58,7 @@ scripts/make-favicon.py    genera icon.svg, favicon.ico y apple-icon.png (✨ do
 - Item: `category` (articulo | cine | viaje, define el fondo y tamaño en `CATEGORIES` de `lib/spaces.ts`), nombre, descripción, precio+moneda, enlace, foto, `needs_locker` (casillero), `kind` (want/buy/gift), `status` (pending/reserved/bought), posición x/y/rotación en coordenadas del mundo.
 - Navegación del tablero: arrastrar fondo = mover; Ctrl/⌘+rueda, pellizco, `+`/`-` o botones = zoom; "Ver todo" encuadra. El tablero nunca se sale de la vista y las tarjetas no pueden salir del corcho.
 - Pin: el color es "aleatorio" pero estable (`pinFor(id)` en `lib/spaces.ts`, hash del id sobre los 9 colores); ya no indica la intención, eso se ve en el detalle. Los viajes usan el ganchito. El casillero solo aplica a artículos.
-- Calidad: el tablero es solo CSS/SVG (sin imágenes de fondo); las fotos de artículos no pasan por `next/image` (reencodaría).
+- Calidad: el marco es CSS y el corcho es la foto `public/corcho.webp` (recorte de `design-src/tablero2.png`, generada con ChatGPT); las fotos de artículos no pasan por `next/image` (reencodaría).
 - Click sin arrastrar en una polaroid abre el detalle; arrastrar la mueve y guarda al soltar.
 - Letrero: Cris y compartido usan `aviso-cris`, Melck `aviso-melck` (config en `SPACES`). La zona del letrero está reservada al colocar tarjetas nuevas (`BANNER` en placement.ts); las tarjetas pueden arrastrarse encima y lo tapan.
 - Rutas: `/` y `/ver/*` son de solo lectura (`readOnly` → `canEdit=false` para todos); `/editar/*` exige sesión. `SpaceNav` cambia sus enlaces según la ruta y `ModeLink` (abajo a la izquierda) ofrece "Iniciar sesión para editar" / "Editar mi tablero" / "Ver como visitante". Tras el login se va a `/editar/<su tablero>`; `/cris` y `/melck` redirigen a `/ver/*`. La lectura es pública para que alguien externo pueda mirar: `proxy` deja pasar `/ver` (`PUBLIC_PREFIXES`) y la migración 0003 da `select` a `anon` en `items`. Escribir sigue exigiendo sesión con perfil (RLS). Ojo: cualquiera con el enlace ve los 3 tableros completos, incluidos los regalos.

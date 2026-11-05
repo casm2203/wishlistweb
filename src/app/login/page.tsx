@@ -1,37 +1,39 @@
 "use client";
 
 import { useActionState } from "react";
+import { Ransom, WISHLIST_TITLE } from "@/features/board/Sign";
 import { signIn } from "./actions";
 
+/** Acceso v3: ficha de biblioteca con cinta, título de letras recortadas y entrada solo por nombre. */
 export default function LoginPage() {
   const [error, action, pending] = useActionState(signIn, null);
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[#c08548] p-6">
-      <form action={action} className="w-full max-w-xs -rotate-1 space-y-3 bg-[#fdfcf8] p-6 shadow-2xl">
-        <h1 className="font-hand text-4xl text-stone-900">Nuestra wishlist</h1>
-        <input
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="Correo"
-          className="w-full rounded border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900"
-        />
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          placeholder="Contraseña"
-          className="w-full rounded border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900"
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          disabled={pending}
-          className="w-full rounded bg-stone-900 py-2 text-sm text-white disabled:opacity-60"
-        >
-          {pending ? "Entrando…" : "Entrar"}
-        </button>
+    <main className="login">
+      <form action={action} className="lcard">
+        <div className="ltape" />
+        <div className="lhead">
+          <span className="ltop">ACCESO · Nº 0001</span>
+          <Ransom text={WISHLIST_TITLE} label="Nuestra wishlist" />
+        </div>
+        <label className="lf">
+          <span>¿Quién eres?</span>
+          <input
+            name="name"
+            type="text"
+            required
+            autoFocus
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="cris o melck"
+          />
+        </label>
+        {error && <p className="lerr">{error}</p>}
+        <div className="lfoot">
+          <button className="lgo" disabled={pending}>
+            {pending ? "entrando…" : "entrar"}
+          </button>
+        </div>
       </form>
     </main>
   );

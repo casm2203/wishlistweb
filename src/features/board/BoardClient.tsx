@@ -2,6 +2,7 @@
 
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { ARRANGE_EVENT } from "@/components/BoardMenu";
 import { createClient } from "@/lib/supabase/client";
 import { STYLES } from "@/lib/spaces";
@@ -65,6 +66,8 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
   const [tray, setTray] = useState<null | "pick" | Pending>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const stage = useRef<StageApi>(null);
+  const [zoom, setZoom] = useState(1);
+  const zoomBy = (d: number) => setZoom((z) => Math.min(1.6, Math.max(0.5, Math.round((z + d) * 100) / 100)));
   const [error, setError] = useState<string | null>(null);
   const draggingId = useRef<string | null>(null);
 
@@ -261,7 +264,7 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
     <>
       <Sign space={space} />
 
-      <BoardStage controlRef={stage} height={worldHeight(pendingCard ? [...items, pendingCard] : items)}>
+      <BoardStage controlRef={stage} zoom={zoom} height={worldHeight(pendingCard ? [...items, pendingCard] : items)}>
         {items.map((item) => (
           <BoardItem
             key={item.id}
@@ -319,6 +322,28 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
           <br />
           MELCK
         </span>
+      </div>
+
+      <div className="dock">
+        {canEdit && (
+          <Link href={space === "shared" ? "/" : `/ver/${space}`} className="eye" title="Ver como visitante" aria-label="Ver como visitante">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </Link>
+        )}
+        <button type="button" className="zb" aria-label="Alejar" onClick={() => zoomBy(-0.15)}>
+          −
+        </button>
+        <button type="button" className="zb" aria-label="Acercar" onClick={() => zoomBy(0.15)}>
+          +
+        </button>
+        {zoom !== 1 && (
+          <button type="button" className="zb all" onClick={() => setZoom(1)}>
+            ver todo
+          </button>
+        )}
       </div>
 
       {canEdit && (
