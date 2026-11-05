@@ -22,14 +22,16 @@ async function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="frame">
-        <div className="board">
-          <div className="lace" />
-          <header className="top">
-            <SpaceNav />
-            <BoardMenu loggedIn={loggedIn} owner={owner} />
-          </header>
-          {children}
+      <div className="page">
+        <div className="frame">
+          <div className="board">
+            <div className="lace" />
+            <header className="top">
+              <SpaceNav />
+              <BoardMenu loggedIn={loggedIn} owner={owner} />
+            </header>
+            {children}
+          </div>
         </div>
       </div>
     </>

@@ -19,10 +19,17 @@ body {
 }
 
 /* ---------- marco + corcho ---------- */
+.page {
+  /* centra el marco en la ventana; el margen ya no se colapsa con el body y no genera scroll */
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+}
 .frame {
-  margin: 14px auto;
+  width: 100%;
+  margin: 0 auto;
   /* Ocupa la ventana: marco + márgenes (60 px) caben en el alto, sin scroll vertical. */
-  max-width: max(1000px, calc((100dvh - 60px) * 1.7 + 32px));
+  max-width: max(1000px, calc((100dvh - 60px) * 1.75 + 32px));
   container-type: inline-size;
   border-radius: 6px;
   padding: 16px;
