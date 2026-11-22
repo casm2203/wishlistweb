@@ -1,10 +1,8 @@
 "use client";
 
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ARRANGE_EVENT } from "@/components/BoardMenu";
-import { createClient } from "@/lib/supabase/client";
 import { STYLES } from "@/lib/spaces";
 import type { CardStyle, Item, ItemCategory, ItemDraft, ItemStatus, Space } from "@/lib/types";
 import { BoardStage, type StageApi } from "./BoardStage";
@@ -14,7 +12,7 @@ import { Modal } from "./Modal";
 import { Sign } from "./Sign";
 import { Tray } from "./Tray";
 import { BoardItem } from "./BoardItem";
-import { createItem, deleteItem, layoutItem, reserveItem, setItemStatus, updateItem } from "./items";
+import { createItem, deleteItem, layoutItem, layoutMany, reserveItem, setItemStatus, updateItem } from "./items";
 import { clampItem, clampToBoard, packRows, worldHeight } from "./placement";
 
 type Dialog = { type: "view" | "edit"; id: string } | { type: "info" } | null;
@@ -71,52 +69,61 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
   const [error, setError] = useState<string | null>(null);
   const draggingId = useRef<string | null>(null);
 
-  // Cambios en vivo del otro usuario.
+  // Cambios del otro usuario: se consulta la lista cada pocos segundos mientras la pestaña está visible
+  // (Vercel no mantiene conexiones largas, así que no hay realtime). No se pisa lo que se arrastra o guarda.
+  const inflight = useRef(0);
+  const knownIds = useRef(new Set(initialItems.map((i) => i.id)));
   useEffect(() => {
-    const supabase = createClient();
-    let channel: RealtimeChannel | undefined;
-    let cancelled = false;
-
-    const onChange = (payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>) => {
-      if (payload.eventType === "DELETE") {
-        const id = (payload.old as { id: string }).id;
-        setItems((prev) => prev.filter((i) => i.id !== id));
-        return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tick = async () => {
+      if (stopped) return;
+      if (document.visibilityState === "visible" && draggingId.current === null && inflight.current === 0) {
+        try {
+          const res = await fetch(`/api/items/${space}`, { cache: "no-store" });
+          if (res.ok && !stopped && draggingId.current === null && inflight.current === 0) {
+            const rows = ((await res.json()) as Item[]).map(clampItem);
+            const serverIds = new Set(rows.map((r) => r.id));
+            setItems((prev) => {
+              // Solo se borran las que el servidor ya conocía y ahora faltan (no las recién creadas aquí).
+              const kept = prev.filter((i) => serverIds.has(i.id) || !knownIds.current.has(i.id));
+              const byId = new Map(rows.map((r) => [r.id, r]));
+              const merged = kept.map((i) => byId.get(i.id) ?? i);
+              const added = rows.filter((r) => !prev.some((i) => i.id === r.id));
+              const next = [...merged, ...added];
+              return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
+            });
+            knownIds.current = serverIds;
+          }
+        } catch {
+          // Sin red o base caída: se reintenta en el siguiente ciclo.
+        }
       }
-      const row = clampItem(payload.new as unknown as Item);
-      if (row.space !== space || row.id === draggingId.current) return;
-      setItems((prev) =>
-        prev.some((i) => i.id === row.id) ? prev.map((i) => (i.id === row.id ? row : i)) : [...prev, row],
-      );
+      timer = setTimeout(tick, 5000);
     };
-
-    // El socket debe llevar el JWT del usuario antes de suscribirse; si no, RLS le oculta todo.
-    void supabase.auth.getSession().then(({ data }) => {
-      if (cancelled) return;
-      if (data.session) supabase.realtime.setAuth(data.session.access_token);
-      channel = supabase
-        .channel(`items:${space}:${crypto.randomUUID()}`)
-        .on(
-          "postgres_changes",
-          // Sin filtro por espacio: Realtime no entrega DELETE filtrados por columnas que no son la PK.
-          { event: "*", schema: "public", table: "items" },
-          onChange,
-        )
-        .subscribe();
-    });
-
+    timer = setTimeout(tick, 5000);
     return () => {
-      cancelled = true;
-      if (channel) void supabase.removeChannel(channel);
+      stopped = true;
+      if (timer) clearTimeout(timer);
     };
   }, [space]);
+
+  /** Marca una escritura en curso para que el sondeo no pise el estado local mientras se guarda. */
+  const track = useCallback(async <T,>(p: Promise<T>): Promise<T> => {
+    inflight.current++;
+    try {
+      return await p;
+    } finally {
+      inflight.current--;
+    }
+  }, []);
 
   const upsert = useCallback((raw: Item) => {
     const row = clampItem(raw);
     setItems((prev) => (prev.some((i) => i.id === row.id) ? prev.map((i) => (i.id === row.id ? row : i)) : [...prev, row]));
   }, []);
 
-  // Los errores de Supabase son objetos {message, details, hint}, no instancias de Error.
+  // Los errores pueden ser objetos con `message` y no instancias de Error.
   const fail = (err: unknown) => {
     console.error(err);
     const m = (err as { message?: unknown } | null)?.message;
@@ -146,8 +153,8 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
     draggingId.current = null;
     setLiftedId(null);
     const i = itemsRef.current.find((x) => x.id === id);
-    if (i) layoutItem(id, { x: i.x, y: i.y, scale: i.scale, rotation: i.rotation, z: i.z }).catch(fail);
-  }, []);
+    if (i) track(layoutItem(id, { x: i.x, y: i.y, scale: i.scale, rotation: i.rotation, z: i.z })).catch(fail);
+  }, [track]);
 
   const current = dialog && dialog.type !== "info" ? items.find((i) => i.id === dialog.id) : undefined;
   const pending = tray && tray !== "pick" ? tray : null;
@@ -186,7 +193,8 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
   async function handleCreate(draft: ItemDraft) {
     if (!pending) return;
     const top = items.reduce((m, i) => Math.max(m, i.z), 0);
-    const row = await createItem(space, draft, { x: pending.x, y: pending.y, scale: pending.scale, z: top + 1 });
+    const row = await track(createItem(space, draft, { x: pending.x, y: pending.y, scale: pending.scale, z: top + 1 }));
+    knownIds.current.add(row.id);
     upsert(row);
     setDialog(null);
     setTray(null);
@@ -195,7 +203,7 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
 
   async function handleUpdate(draft: ItemDraft) {
     if (!current) return;
-    const row = await updateItem(current, draft);
+    const row = await track(updateItem(current, draft));
     upsert(row);
     setDialog({ type: "view", id: row.id });
   }
@@ -225,7 +233,7 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
     const pos = packRows(items);
     setItems((prev) => prev.map((i) => (pos.has(i.id) ? { ...i, ...pos.get(i.id)! } : i)));
     try {
-      await Promise.all([...pos].map(([id, p]) => layoutItem(id, p)));
+      await track(layoutMany([...pos].map(([id, p]) => ({ id, x: p.x, y: p.y }))));
       setNotice("¡Tarjetas acomodadas! ✿");
     } catch (err) {
       fail(err);

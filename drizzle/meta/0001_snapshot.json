@@ -1,0 +1,360 @@
+{
+  "id": "1fa9cbe6-3ec6-4c4c-80f9-9d77f2d8d3fb",
+  "prevId": "5005bebb-48c2-4e81-bacb-0e8a8301b4d2",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.item_images": {
+      "name": "item_images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "data": {
+          "name": "data",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_type": {
+          "name": "content_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'image/jpeg'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.items": {
+      "name": "items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "space": {
+          "name": "space",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'articulo'"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'USD'"
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_id": {
+          "name": "image_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "needs_locker": {
+          "name": "needs_locker",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'want'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "x": {
+          "name": "x",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "y": {
+          "name": "y",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "rotation": {
+          "name": "rotation",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "style": {
+          "name": "style",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paper": {
+          "name": "paper",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ink": {
+          "name": "ink",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "holder": {
+          "name": "holder",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "holder_color": {
+          "name": "holder_color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bg": {
+          "name": "bg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scale": {
+          "name": "scale",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "z": {
+          "name": "z",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "items_space_idx": {
+          "name": "items_space_idx",
+          "columns": [
+            {
+              "expression": "space",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "items_image_idx": {
+          "name": "items_image_idx",
+          "columns": [
+            {
+              "expression": "image_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "items_image_id_item_images_id_fk": {
+          "name": "items_image_id_item_images_id_fk",
+          "tableFrom": "items",
+          "columnsFrom": [
+            "image_id"
+          ],
+          "tableTo": "item_images",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "items_space_check": {
+          "name": "items_space_check",
+          "value": "\"items\".\"space\" in ('cris','melck','shared')"
+        },
+        "items_name_check": {
+          "name": "items_name_check",
+          "value": "char_length(\"items\".\"name\") between 1 and 120"
+        },
+        "items_category_check": {
+          "name": "items_category_check",
+          "value": "\"items\".\"category\" in ('articulo','cine','viaje','nota')"
+        },
+        "items_kind_check": {
+          "name": "items_kind_check",
+          "value": "\"items\".\"kind\" in ('want','buy','gift')"
+        },
+        "items_status_check": {
+          "name": "items_status_check",
+          "value": "\"items\".\"status\" in ('pending','reserved','bought')"
+        },
+        "items_style_check": {
+          "name": "items_style_check",
+          "value": "\"items\".\"style\" in ('polaroid','estampilla','recibo','boleta','pelicula','correo','postit','cuaderno','clasica','ficha')"
+        },
+        "items_holder_check": {
+          "name": "items_holder_check",
+          "value": "\"items\".\"holder\" in ('pin','tape','clip','none')"
+        },
+        "items_paper_check": {
+          "name": "items_paper_check",
+          "value": "\"items\".\"paper\" ~ '^#[0-9a-fA-F]{6}$'"
+        },
+        "items_ink_check": {
+          "name": "items_ink_check",
+          "value": "\"items\".\"ink\" ~ '^#[0-9a-fA-F]{6}$'"
+        },
+        "items_holder_color_check": {
+          "name": "items_holder_color_check",
+          "value": "\"items\".\"holder_color\" ~ '^#[0-9a-fA-F]{6}$'"
+        },
+        "items_bg_check": {
+          "name": "items_bg_check",
+          "value": "\"items\".\"bg\" ~ '^#[0-9a-fA-F]{6}$'"
+        },
+        "items_emoji_check": {
+          "name": "items_emoji_check",
+          "value": "char_length(\"items\".\"emoji\") <= 16"
+        },
+        "items_code_check": {
+          "name": "items_code_check",
+          "value": "char_length(\"items\".\"code\") <= 4"
+        },
+        "items_scale_check": {
+          "name": "items_scale_check",
+          "value": "\"items\".\"scale\" between 0.5 and 2.2"
+        },
+        "items_created_by_check": {
+          "name": "items_created_by_check",
+          "value": "\"items\".\"created_by\" in ('cris','melck')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

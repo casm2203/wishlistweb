@@ -6,6 +6,8 @@ Cada espacio es un **tablero de corcho con marco hecho en CSS** (fondo de la pá
 > Next.js 16 con cambios incompatibles (ver `AGENTS.md`): antes de tocar APIs de Next lee `node_modules/next/dist/docs/`.
 > Aquí: `middleware` → **`src/proxy.ts`**, Cache Components activado (todo acceso a `cookies()`/datos va dentro de `<Suspense>`), `LayoutProps<"/">` global.
 
+> **Migración de datos (nov 2026, hecha):** la base pasó de Supabase al Postgres del servidor casero; el código ya no usa Supabase (sesión por cookie JWT, permisos en server actions, fotos `bytea`, sondeo en vez de realtime). Todo lo de abajo sobre Supabase/RLS/Storage/Realtime es histórico: la referencia vigente es `docs/base-de-datos.md`. `supabase/migrations/` queda solo como historial.
+
 ## Stack
 Next 16 (App Router, TS, Tailwind v4) · Supabase (Postgres + Auth + Storage + Realtime) · sin librerías de canvas (pan/zoom hecho a medida, limitado al tablero).
 
@@ -71,6 +73,10 @@ scripts/make-favicon.py    genera icon.svg, favicon.ico y apple-icon.png (✨ do
 - No leer refs durante render (regla `react-hooks/refs` activa).
 
 ## Pendientes
+- [x] Migración Supabase → Postgres del servidor (22 nov 2026): esquema Drizzle aplicado, 1 item + foto importados, variables en Vercel (Production y Preview), preview probado (`/api/health`, lectura y foto). El proyecto de Supabase quedó pausado.
+- [ ] Probar en producción: login, crear con foto, mover, reservar entre cuentas.
+- [ ] Quitar de Vercel las variables sin uso `LOGIN_*` y `NEXT_PUBLIC_SUPABASE_*`; actualizar Next 16.4.3 (el build avisa de una vulnerabilidad conocida).
+- [ ] Login por nombre sin contraseña: valorar un PIN por persona.
 - [x] Proyecto Supabase `wishlist-cris-melck` (us-east-1) creado, migraciones 0001-0003 aplicadas, `.env.local` listo (el ref/URL del proyecto vive solo en `.env.local` y en Vercel).
 - [x] Usuario Cris creado y asignado en `profiles`. Melck también creado y asignado.
 - [x] Probado en navegador como Cris: agregar con foto, arrastrar, pan/zoom, texto oculto al alejar, detalle, persistencia al recargar, espacio de Melck en solo lectura.

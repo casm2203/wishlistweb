@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
     ];
   },
   partialPrefetching: true,
+  // Las fotos (JPEG ≤ 900 px) viajan a las server actions como FormData; el límite por defecto es 1 MB.
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   turbopack: {
     rules: {
       "*.css": {

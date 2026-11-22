@@ -1,14 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { safeFetch } from "@/lib/safeFetch";
-import { createClient } from "@/lib/supabase/server";
+import { currentOwner } from "@/lib/session";
 
 /** Descarga la foto de un producto para que el navegador la reduzca y la suba (evita bloqueos CORS). */
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Sin sesión" }, { status: 401 });
+  if (!(await currentOwner())) return NextResponse.json({ error: "Sin sesión" }, { status: 401 });
 
   const target = request.nextUrl.searchParams.get("url");
   if (!target) return NextResponse.json({ error: "Falta la imagen" }, { status: 400 });

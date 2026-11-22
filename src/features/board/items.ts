@@ -1,19 +1,15 @@
-import { createClient } from "@/lib/supabase/client";
 import type { Item, ItemDraft, Space } from "@/lib/types";
-import { layoutItemAction, setItemStatusAction, updateItemAction } from "./actions";
+import {
+  createItemAction,
+  deleteItemAction,
+  layoutItemAction,
+  layoutManyAction,
+  reserveItemAction,
+  setItemStatusAction,
+  updateItemAction,
+} from "./actions";
 
-const BUCKET = "item-images";
-
-async function uploadImage(blob: Blob): Promise<string> {
-  const supabase = createClient();
-  const path = `${crypto.randomUUID()}.jpg`;
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
-  if (error) throw error;
-  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-}
-
+/** Campos editables del formulario (sin la foto), tal como los espera la acción del servidor. */
 function fields(draft: ItemDraft) {
   return {
     category: draft.category,
@@ -37,27 +33,25 @@ function fields(draft: ItemDraft) {
   };
 }
 
+/** Arma el FormData (JSON + foto opcional) que viaja a la acción del servidor. */
+function body(data: object, image: Blob | null, removeImage = false) {
+  const form = new FormData();
+  form.set("data", JSON.stringify(data));
+  if (image) form.set("image", image, "foto.jpg");
+  if (removeImage) form.set("removeImage", "1");
+  return form;
+}
+
 export async function createItem(
   space: Space,
   draft: ItemDraft,
   pos: { x: number; y: number; scale: number; z: number },
 ): Promise<Item> {
-  const supabase = createClient();
-  const image_url = draft.image ? await uploadImage(draft.image) : null;
-  const { data, error } = await supabase
-    .from("items")
-    .insert({ ...fields(draft), ...pos, space, image_url })
-    .select()
-    .single();
-  if (error) throw error;
-  return data as Item;
+  return createItemAction(body({ ...fields(draft), ...pos, space }, draft.image));
 }
 
 export async function updateItem(item: Item, draft: ItemDraft): Promise<Item> {
-  let image_url = item.image_url;
-  if (draft.image) image_url = await uploadImage(draft.image);
-  else if (draft.removeImage) image_url = null;
-  return updateItemAction(item.id, { ...fields(draft), image_url });
+  return updateItemAction(item.id, body(fields(draft), draft.image, !draft.image && draft.removeImage));
 }
 
 /** Posición, tamaño, giro y orden de apilado: lo que cambia al arrastrar o pellizcar una tarjeta. */
@@ -67,18 +61,20 @@ export async function layoutItem(id: string, patch: Partial<Layout>) {
   await layoutItemAction(id, patch);
 }
 
+/** Guarda las posiciones de muchas tarjetas en una sola petición. */
+export async function layoutMany(list: { id: string; x: number; y: number }[]) {
+  await layoutManyAction(list);
+}
+
 export async function setItemStatus(id: string, status: Item["status"]): Promise<Item> {
   return setItemStatusAction(id, status);
 }
 
-/** Reserva (o libera) un regalo del tablero ajeno; la función SQL valida sesión, espacio y estado. */
+/** Reserva (o libera) un regalo del tablero ajeno; el servidor valida sesión, espacio y estado. */
 export async function reserveItem(id: string, reserve: boolean): Promise<Item> {
-  const { data, error } = await createClient().rpc("reserve_item", { item_id: id, reserve });
-  if (error) throw error;
-  return data as Item;
+  return reserveItemAction(id, reserve);
 }
 
 export async function deleteItem(id: string) {
-  const { error } = await createClient().from("items").delete().eq("id", id);
-  if (error) throw error;
+  await deleteItemAction(id);
 }
