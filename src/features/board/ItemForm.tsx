@@ -63,6 +63,8 @@ export function ItemForm({ item, seed, space, onSubmit, onCancel }: Props) {
   const [preview, setPreview] = useState<string | null>(item?.image_url ?? null);
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Foto en proceso (reducción a JPEG): no se puede guardar hasta que termine, o la tarjeta quedaría sin foto.
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetching, setFetching] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
@@ -115,6 +117,7 @@ export function ItemForm({ item, seed, space, onSubmit, onCancel }: Props) {
   const effHolder = holderOf(sample);
 
   async function takeImage(file: Blob) {
+    setProcessing(true);
     try {
       const blob = await resizeImage(file);
       setImage(blob);
@@ -125,6 +128,8 @@ export function ItemForm({ item, seed, space, onSubmit, onCancel }: Props) {
       });
     } catch {
       setError("No se pudo leer esa imagen");
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -486,8 +491,8 @@ export function ItemForm({ item, seed, space, onSubmit, onCancel }: Props) {
           <button type="button" className="btn soft" onClick={onCancel}>
             {editing ? "cancelar" : "← volver"}
           </button>
-          <button className="btn pinkb" disabled={busy || !name.trim()}>
-            {busy ? "Guardando…" : editing ? "guardar" : "pegar en el tablero"}
+          <button className="btn pinkb" disabled={busy || processing || !name.trim()}>
+            {busy ? "Guardando…" : processing ? "Preparando foto…" : editing ? "guardar" : "pegar en el tablero"}
           </button>
         </div>
       </form>
