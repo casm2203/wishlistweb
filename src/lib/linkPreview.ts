@@ -100,3 +100,49 @@ export function parseLinkPreview(html: string, baseUrl: URL): LinkPreview {
     currency: metaContent(html, ["product:price:currency", "og:price:currency"]) ?? offer?.priceCurrency ?? null,
   };
 }
+
+/**
+ * Las tiendas VTEX (p. ej. Vélez) pintan las etiquetas del producto con JavaScript, así que el HTML
+ * del servidor llega sin ellas. Sus fichas terminan en `/<slug>/p` y el catálogo público sí las da.
+ */
+export function vtexCatalogUrl(page: URL): string | null {
+  const slug = /^\/([^/]+)\/p\/?$/.exec(page.pathname)?.[1];
+  return slug ? `${page.origin}/api/catalog_system/pub/products/search/${slug}/p` : null;
+}
+
+interface VtexProduct {
+  productName?: string;
+  description?: string;
+  items?: {
+    itemId?: string;
+    images?: { imageUrl?: string }[];
+    sellers?: { commertialOffer?: { Price?: number; AvailableQuantity?: number } }[];
+  }[];
+}
+
+/** El catálogo no dice la moneda: se deduce del país del dominio. */
+const CURRENCY_BY_SUFFIX: [string, string][] = [
+  [".co", "COP"],
+  [".mx", "MXN"],
+];
+
+export function parseVtexCatalog(json: string, page: URL): LinkPreview | null {
+  const data = JSON.parse(json) as VtexProduct[];
+  const product = Array.isArray(data) ? data[0] : undefined;
+  if (!product) return null;
+
+  const items = product.items ?? [];
+  const offerOf = (i: (typeof items)[number]) => i.sellers?.[0]?.commertialOffer;
+  const inStock = (i: (typeof items)[number]) => (offerOf(i)?.AvailableQuantity ?? 0) > 0;
+  // La variante del enlace (?idsku=); si está agotada, su precio no es fiable y se usa una disponible.
+  const wanted = items.find((i) => i.itemId === page.searchParams.get("idsku"));
+  const item = (wanted && inStock(wanted) ? wanted : items.find(inStock)) ?? wanted ?? items[0];
+
+  return {
+    title: product.productName?.trim() || null,
+    description: decode((product.description ?? "").replace(/<[^>]*>/g, " ")) || null,
+    image: (wanted ?? item)?.images?.[0]?.imageUrl ?? null,
+    price: (item && offerOf(item)?.Price) || null,
+    currency: CURRENCY_BY_SUFFIX.find(([suffix]) => page.hostname.endsWith(suffix))?.[1] ?? null,
+  };
+}
