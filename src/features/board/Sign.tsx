@@ -5,8 +5,8 @@ import type { Space } from "@/lib/types";
 const IMG = new Set(["n", "U", "e", "S", "t", "R", "a", "W", "i", "s", "H", "l", "I", "T", "M", "L", "c", "K"]);
 const file = (ch: string) => `/letras/${ch === ch.toUpperCase() ? "u" : "l"}_${ch.toLowerCase()}.webp`;
 
-// Título de «carta de rescate» por espacio (palabras separadas por «|»).
-const TITLES: Record<Space, string> = { cris: "Cris", shared: "nUeStRa|WisHlIsT", melck: "Melck" };
+// Título «carta de rescate» del acceso (palabras separadas por «|»).
+const WISHLIST = "nUeStRa|WisHlIsT";
 const PAPERS = ["#f4a3bf", "#fff3a6", "#a9d3e8", "#e3342f", "#a8dcc0", "#f6efe0"];
 
 // Giro y desplazamiento fijos por posición (no aleatorios: evita diferencias servidor/cliente).
@@ -47,15 +47,9 @@ export function Ransom({ text, label, long }: { text: string; label: string; lon
   );
 }
 
-/** Título del espacio con letras recortadas, como carta de rescate. */
+/** Nombre del tablero, manuscrito sobre el corcho. */
 export function Sign({ space }: { space: Space }) {
-  const { title, sub } = SPACES[space];
-  return (
-    <div className="signwrap">
-      <Ransom text={TITLES[space]} label={title} />
-      <small className="ransom-sub">{sub}</small>
-    </div>
-  );
+  return <h1 className="htitle">{SPACES[space].title}</h1>;
 }
 
-export const WISHLIST_TITLE = TITLES.shared;
+export const WISHLIST_TITLE = WISHLIST;

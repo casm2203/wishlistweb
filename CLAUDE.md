@@ -30,9 +30,10 @@ src/
     (app)/editar/[space]   tableros EDITABLES (exigen login; editas el tuyo y el compartido); /editar → /editar/shared
   features/board/
     SpaceBoard.tsx         (server) carga items del espacio + calcula canEdit
-    BoardClient.tsx        estado de items, diálogos, sondeo cada 5 s (sin realtime), FAB "+ pegar algo" (dentro del tablero, abajo a la derecha), gestos → guarda con layoutItem
+    BoardClient.tsx        estado de items, diálogos, sondeo cada 5 s (sin realtime), dock (+ Agregar artículo, acomodar, ojo, zoom), gestos → guarda con layoutItem
     BoardStage.tsx         corcho de ancho lógico 1200; en escritorio el tablero tiene alto fijo (ancho/1.75) y se escala (k ≤ 2.5) para que todas las tarjetas quepan sin scroll; en móvil k ≥ 0.6 y se desliza; `ScaleContext`
-    Sign.tsx               título «carta de rescate» (letras en public/letras) + subtítulo del espacio
+    Sign.tsx               nombre del tablero manuscrito; `Ransom` («carta de rescate», public/letras) solo en el acceso
+    Sheet.tsx              `PaperSheet`: hoja cuadriculada del detalle y del formulario (las notas toman su papel)
     cards.tsx              `Card`: todos los estilos de tarjeta en CSS + sujetador (pin/cinta/clip) + sellos + insignia de casillero
     BoardItem.tsx          posición de la tarjeta: arrastrar, pellizco (tamaño+giro), Ctrl+rueda (tamaño), Shift+rueda (giro); clic = detalle
     ItemForm.tsx           formulario con vista previa viva, estilo/papel/tinta/sujetador/emoji/código/inclinación (pegar foto con Ctrl/⌘+V)
@@ -41,8 +42,9 @@ src/
     actions.ts             server actions: TODAS las escrituras (crear, editar, mover, estado, reservar, borrar); validan sesión y `writable(owner)` en el WHERE
     placement.ts           ancho lógico, `box()` (tamaño visual con escala), clamp y primer hueco libre (izq→der, arriba→abajo)
     image.ts               redimensiona fotos a JPEG ≤ 900px
-  app/board.css            marco, corcho, encaje, pestañas, letrero, tarjetas, sellos, FAB (clases globales del diseño)
-  components/              SpaceNav (pestañas de papel) · BoardMenu (hamburguesa de papel arriba a la derecha: ver como visitante / editar / acomodar tarjetas / salir)
+  app/board.css            marco, corcho, encaje, tarjetas, sellos, base de la bandeja y del acceso
+  app/diseno.css           lo que rodea al tablero según el artefacto: título, pestañas, botones, bandeja, ventanas y tipografía (Homemade Apple y La Belle Aurore)
+  components/              SpaceNav (pestañas de papel) · CornerButton (cinta arriba a la derecha: ✕ salir, o 🔑 entrar); ver como visitante, agregar, acomodar y zoom van en el dock de abajo a la derecha (BoardClient)
   db/  schema.ts (Drizzle: items, item_images) · index.ts (`withDb`: Pool de 2 por petición, WSS con cabeceras CF-Access) · items.ts (mapeo fila→Item, reservar atómico)
   lib/  types.ts · spaces.ts (etiquetas, tipos, monedas) · auth.ts · session.ts (JWT con jose)
 drizzle/                   migraciones vigentes (0000_init, 0001_updated_at_trigger) + down/ con su reversa
@@ -66,8 +68,8 @@ design-src/                originales sin procesar (NO van al repo ni se sirven;
 - Pin: el color es "aleatorio" pero estable (`pinFor(id)` en `lib/spaces.ts`, hash del id sobre los 9 colores); ya no indica la intención, eso se ve en el detalle. Los viajes usan el ganchito. El casillero solo aplica a artículos.
 - Calidad: el marco es CSS y el corcho es la foto `public/corcho.webp` (recorte de `design-src/tablero2.png`, generada con ChatGPT); las fotos de artículos no pasan por `next/image` (reencodaría).
 - Click sin arrastrar en una polaroid abre el detalle; arrastrar la mueve y guarda al soltar.
-- Letrero: Cris y compartido usan `aviso-cris`, Melck `aviso-melck` (config en `SPACES`). La zona del letrero está reservada al colocar tarjetas nuevas (`BANNER` en placement.ts); las tarjetas pueden arrastrarse encima y lo tapan.
-- Rutas: `/` y `/ver/*` son de solo lectura (`readOnly` → `canEdit=false` para todos); `/editar/*` exige sesión. `SpaceNav` cambia sus enlaces según la ruta y `ModeLink` (abajo a la izquierda) ofrece "Iniciar sesión para editar" / "Editar mi tablero" / "Ver como visitante". Tras el login se va a `/editar/<su tablero>`; `/cris` y `/melck` redirigen a `/ver/*`. La lectura es pública para que alguien externo pueda mirar: `proxy` deja pasar `/ver` (`PUBLIC_PREFIXES`) y `/api/items/*` e `/api/img/*` también son públicos. Escribir exige sesión (server actions). Ojo: cualquiera con el enlace ve los 3 tableros completos, incluidos los regalos.
+- Diseño de referencia vigente: artefacto https://claude.ai/artifact/EPNCM93qtnyzmpB3V5pSjy. El tablero (corcho, marco, tarjetas) se conserva como está; del artefacto se toma lo de alrededor. El formulario ya no cambia el estilo de una tarjeta existente ni pide casillero, emoji o fondo (los valores guardados se conservan).
+- Rutas: `/` y `/ver/*` son de solo lectura (`readOnly` → `canEdit=false` para todos); `/editar/*` exige sesión. `SpaceNav` cambia sus enlaces según la ruta el ojo del dock alterna entre editar y ver como visitante, y la cinta de la esquina lleva a iniciar sesión. Tras el login se va a `/editar/<su tablero>`; `/cris` y `/melck` redirigen a `/ver/*`. La lectura es pública para que alguien externo pueda mirar: `proxy` deja pasar `/ver` (`PUBLIC_PREFIXES`) y `/api/items/*` e `/api/img/*` también son públicos. Escribir exige sesión (server actions). Ojo: cualquiera con el enlace ve los 3 tableros completos, incluidos los regalos.
 - Autocompletar: en el formulario, pegar un enlace llama a `/api/link-preview` (Open Graph + JSON-LD) y `/api/link-image`; ambos exigen sesión y bloquean IPs privadas (SSRF, `lib/safeFetch.ts`). En tiendas VTEX (fichas `/<slug>/p`, p. ej. Vélez) el HTML llega sin esas etiquetas: si falta precio o foto se consulta el catálogo público de la tienda (`parseVtexCatalog` en `lib/linkPreview.ts`; respeta `?idsku=` y deduce la moneda del dominio .co/.mx). Solo rellena campos vacíos; si el sitio bloquea (p. ej. sin precio en Open Graph) se completa a mano.
 - Móvil: nav compacta (nombres cortos), zoom inicial 0.36 sobre el letrero en pantallas <640 px, formulario sin rotación. Los gestos táctiles reales (pellizco) no se probaron: el navegador de pruebas emula con ratón.
 - Los enlaces solo se renderizan si son `http(s)`.
@@ -79,7 +81,7 @@ design-src/                originales sin procesar (NO van al repo ni se sirven;
 ## Pendientes
 - [x] Migración Supabase → Postgres propio (22 nov 2026): esquema Drizzle, 1 item + foto importados, variables en Vercel, producción probada (login, reservar/liberar, foto, mover, borrar). Proyecto de Supabase pausado.
 - [x] El formulario no deja guardar mientras se procesa la foto («Preparando foto…»).
-- [ ] Actualizar Next 16.4.3 (el build avisa de una vulnerabilidad conocida).
+- [x] Next actualizado a 16.4.6 y `npm audit` sin vulnerabilidades (26 nov 2026; `overrides` fuerza un esbuild seguro en la dependencia de desarrollo de drizzle-kit).
 - [ ] Login por nombre sin contraseña: cualquiera con la URL de `/login` entra como Cris o Melck; valorar un PIN por persona.
 - [ ] Sin plan B si el portátil cae (sin réplica). Repetir `restore-test.sh` del servidor cuando haya más datos reales.
 - [ ] Revisar con el usuario: pines sin usar (negro, rosa, cian, amarillo, menta, morado), zona de texto de los tickets y capacidad (~35-40 artículos por tablero).

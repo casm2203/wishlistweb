@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { BoardMenu } from "@/components/BoardMenu";
+import { CornerButton } from "@/components/CornerButton";
 import { SpaceNav } from "@/components/SpaceNav";
 import { getViewer } from "@/lib/auth";
 
@@ -14,7 +14,7 @@ async function Shell({ children }: { children: React.ReactNode }) {
             <div className="lace" />
             <header className="top">
               <SpaceNav />
-              <BoardMenu loggedIn={loggedIn} owner={owner} />
+              <CornerButton loggedIn={loggedIn} owner={owner} />
             </header>
             {children}
           </div>

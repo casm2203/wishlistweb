@@ -23,7 +23,7 @@ export function SpaceNav() {
             key={s}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`tab${active ? ` on ${SPACES[s].tab}` : ""}`}
+            className={`tb${active ? " on" : ""}`}
           >
             {SPACES[s].short}
           </Link>

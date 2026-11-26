@@ -12,7 +12,6 @@ export default function LoginPage() {
       <form action={action} className="lcard">
         <div className="ltape" />
         <div className="lhead">
-          <span className="ltop">ACCESO · Nº 0001</span>
           <Ransom text={WISHLIST_TITLE} label="Nuestra wishlist" />
         </div>
         <label className="lf">

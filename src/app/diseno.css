@@ -1,0 +1,609 @@
+/* Diseño de lo que rodea al tablero (título, navegación, botones, bandeja, ventanas y acceso),
+   tomado del artefacto «Wishlist · Cris y Melck». El corcho, el marco y las tarjetas viven en board.css. */
+:root {
+  --script: var(--font-apple), "Homemade Apple", cursive;
+  --pencil: var(--font-aurore), "La Belle Aurore", cursive;
+  --stripes: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.4) 0 6px, transparent 6px 12px);
+  --torn: polygon(3% 0, 97% 6%, 100% 30%, 97% 55%, 100% 80%, 97% 100%, 3% 94%, 0 70%, 3% 45%, 0 20%);
+}
+
+/* ---------- título del tablero ---------- */
+.htitle {
+  position: relative;
+  z-index: 4;
+  margin: 14px auto 0;
+  text-align: center;
+  font: 400 44px/1.6 var(--script);
+  color: #2b1a10;
+  /* halo claro: el corcho fotográfico tiene más textura que el del artefacto */
+  text-shadow: 0 0 6px rgba(255, 244, 224, 0.95), 0 0 14px rgba(255, 244, 224, 0.85), 0 0 22px rgba(255, 244, 224, 0.7);
+  pointer-events: none;
+}
+
+/* ---------- pestañas y esquina: tiras de cinta ---------- */
+.top {
+  justify-content: space-between;
+  align-items: center;
+}
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px 14px;
+  background: var(--stripes), #e8dcc6;
+  clip-path: polygon(1% 0, 99% 4%, 100% 30%, 99% 55%, 100% 80%, 99% 100%, 1% 96%, 0 70%, 1% 45%, 0 20%);
+  transform: rotate(-1.5deg);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+.tabs .tb {
+  font: 400 14px/1.6 var(--script);
+  padding: 5px 8px 3px;
+  white-space: nowrap;
+  color: rgba(45, 33, 26, 0.6);
+  text-decoration: none;
+}
+.tabs .tb.on {
+  color: #2d211a;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 1.5px;
+}
+.corner,
+.dock .drow > * {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 34px;
+  border: 0;
+  cursor: pointer;
+  color: #2d211a;
+  font-size: 17px;
+  text-decoration: none;
+  clip-path: polygon(6% 0, 94% 6%, 100% 25%, 94% 50%, 100% 75%, 94% 100%, 6% 94%, 0 75%, 6% 50%, 0 25%);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+.corner {
+  background: var(--stripes), #e9c9bf;
+  transform: rotate(7deg);
+}
+
+/* ---------- botones de abajo a la derecha ---------- */
+.dock {
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  left: auto;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+.dock .addbtn {
+  margin-right: 4px;
+  padding: 10px 18px;
+  border: 0;
+  cursor: pointer;
+  color: #2d211a;
+  font: 400 13px/1.7 var(--script);
+  background: var(--stripes), #d7e0cf;
+  transform: rotate(-3deg);
+  clip-path: var(--torn);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+.dock .drow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dock .drow .eye {
+  background: var(--stripes), #d7e0cf;
+  transform: rotate(-6deg);
+}
+.dock .drow .eye.on {
+  background: #2d211a;
+  color: #fff6e3;
+}
+.dock .drow .zb {
+  background: var(--stripes), #e8dcc6;
+  transform: rotate(5deg);
+}
+.dock .drow .zb ~ .zb {
+  background: var(--stripes), #dfe4ea;
+  transform: rotate(-3deg);
+}
+.dock .drow .zb.all {
+  width: auto;
+  padding: 0 14px;
+  font: 400 11px/1.6 var(--script);
+}
+.dock .drow > :hover,
+.dock .addbtn:hover,
+.corner:hover {
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35)) brightness(1.04);
+}
+body.traying .dock {
+  display: none;
+}
+.empty {
+  font: 400 17px/1.8 var(--script);
+}
+
+/* ---------- bandeja ---------- */
+.tray {
+  background: linear-gradient(to top, rgba(20, 12, 6, 0.85), rgba(20, 12, 6, 0.5) 70%, transparent);
+}
+.tray .thd {
+  position: relative;
+  justify-content: center;
+}
+.tray .thd .t {
+  flex: none;
+  max-width: calc(100% - 90px);
+  text-align: center;
+}
+.tray .x2 {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.tray .tstrip,
+.tray .fstrip {
+  justify-content: safe center;
+}
+.tray .tf {
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+.tray .crow {
+  justify-content: center;
+}
+/* con la bandeja abierta se apagan las demás tarjetas para destacar la nueva */
+body.traying .zones .slot:not(.tmp) {
+  filter: brightness(0.45) saturate(0.6) blur(1.2px);
+}
+.tray .thd .t {
+  font: 400 17px/1.6 var(--script);
+}
+.tray .crow > span {
+  font: 400 14px/1.6 var(--script);
+}
+.tray .tacts {
+  justify-content: center;
+  gap: 18px;
+  margin: 10px auto 0;
+}
+.tray .tacts .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: #fff6e3;
+  font: 400 16px/1.6 var(--script);
+}
+.tray .tacts .btn.soft::before,
+.tray .tacts .btn.pinkb::after {
+  content: "";
+  width: 40px;
+  height: 18px;
+  flex: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 22'%3E%3Cpath d='M3 12 C 15 10, 28 13, 44 11 M34 4 C 38 7, 42 9, 46 11 C 42 13, 38 15, 35 19' fill='none' stroke='%23fff6e3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.tray .tacts .btn.soft::before {
+  transform: scaleX(-1);
+}
+.tray .fbtn.on {
+  background: none;
+  box-shadow: none;
+  transform: rotate(var(--tr)) scale(1.12);
+}
+.tray .fstrip:has(.fbtn.on) .fbtn:not(.on) {
+  opacity: 0.45;
+}
+
+/* ---------- ventana de datos: hoja cuadriculada ---------- */
+.paper {
+  position: relative;
+  margin: auto;
+  width: min(740px, 100%);
+  color: #1e1c1a;
+  background-color: #f4f3ef;
+  background-image: linear-gradient(#d9dcd7 1px, transparent 1px), linear-gradient(90deg, #d9dcd7 1px, transparent 1px);
+  background-size: 22px 22px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5);
+  transform: rotate(0.6deg);
+}
+.paper .ntape {
+  position: absolute;
+  left: 50%;
+  top: -14px;
+  z-index: 3;
+  width: 100px;
+  height: 30px;
+  margin-left: -50px;
+  background: var(--stripes), #c9a87a;
+  opacity: 0.85;
+  transform: rotate(-6deg);
+}
+.paper .x {
+  position: absolute;
+  right: 12px;
+  top: 8px;
+  z-index: 4;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 22px;
+  color: #1e1c1a;
+}
+.paper .nbody {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 28px;
+  padding: 42px 32px 26px;
+}
+.paper .nbody.one {
+  grid-template-columns: minmax(0, 1fr);
+}
+.paper .lcol {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  gap: 10px;
+  width: 100%;
+}
+.paper .xr {
+  min-width: 0;
+}
+.paper .rawph {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 260px;
+  overflow: hidden;
+  background: var(--bg);
+  font-size: 90px;
+  transform: rotate(2.5deg);
+}
+.paper .rawph img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.paper .rawph.up {
+  position: relative;
+  cursor: pointer;
+  background: #ece9e2;
+  border: 2px dashed #b9b2a6;
+  color: #7d766c;
+  font: 400 14px/1.6 var(--script);
+  text-align: center;
+}
+.paper .rawph.up.has {
+  border-style: solid;
+}
+.paper .rawph.up.over {
+  border-color: #1e1c1a;
+}
+.paper .rawph.up .in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+}
+.paper .rawph.up .icn {
+  width: 40px;
+  height: 40px;
+}
+.paper .rawph.up input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.paper .rawph.up .chg {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 12px;
+  border-radius: 99px;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(30, 28, 26, 0.75);
+  font: 400 12px/1.8 var(--script);
+  pointer-events: none;
+}
+.paper .phlink,
+.paper .phin,
+.paper .phremove,
+.paper .phhint {
+  text-align: center;
+  font: 400 13px/1.8 var(--script);
+  color: #26306b;
+}
+.paper .phlink {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.paper .phin {
+  width: 100%;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1.5px dashed #b9b2a6;
+  background: transparent;
+}
+.paper .phremove {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #7d766c;
+  text-decoration: underline;
+}
+.paper .phhint {
+  font-size: 12px;
+  color: #7d766c;
+}
+.paper h2 {
+  margin: 0 0 12px;
+  padding-right: 24px;
+  font: 400 30px/1.3 var(--script);
+  overflow-wrap: anywhere;
+}
+.paper .eh2 {
+  width: calc(100% - 24px);
+  margin-bottom: 10px;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1.5px dashed #b9b2a6;
+  background: transparent;
+  color: #1e1c1a;
+  font: 400 28px/1.4 var(--script);
+}
+.paper .nrow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 32px;
+}
+.paper .nrow > span {
+  flex: none;
+  width: 100px;
+  font: 400 18px/1.8 var(--pencil);
+  color: #7d766c;
+}
+.paper .nrow b {
+  min-width: 0;
+  font: 400 21px/1.7 var(--pencil);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.paper .nrow b.sm {
+  font-size: 18px;
+  line-height: 1.6;
+}
+.paper .nrow :is(input, textarea, select) {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1.5px dashed #b9b2a6;
+  background: transparent;
+  color: #1e1c1a;
+  font: 400 21px/1.5 var(--pencil);
+  resize: none;
+}
+.paper .nrow select {
+  flex: none;
+  width: 80px;
+}
+.paper :is(input, textarea, select):focus-visible {
+  outline: none;
+  border-bottom-color: #1e1c1a;
+}
+.paper .nchk {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0 8px;
+}
+.paper.ed .nchk {
+  margin-top: 0;
+}
+.paper .nchk button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: 400 18px var(--pencil);
+  color: #8a837a;
+}
+.paper .nchk button.on {
+  color: #1e1c1a;
+  font-weight: 700;
+}
+.paper .nchk i {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-radius: 3px 6px 4px 5px;
+  transform: rotate(-4deg);
+}
+.paper .nchk button.on i::after {
+  content: "✓";
+  position: absolute;
+  left: 1px;
+  top: -9px;
+  font: 700 22px var(--font-caveat), cursive;
+}
+.paper .acts {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+}
+.paper .wbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #1e1c1a;
+  font: 400 15px/1.7 var(--script);
+}
+.paper .wbtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.paper .wbtn.del,
+.paper .wbtn.danger {
+  color: #9b4636;
+}
+.paper:not(.ed) .acts .wbtn::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 20 L 6 14 L 17 3 L 21 7 L 10 18 Z M15 5 L 19 9 M4 20 L 9 19' fill='none' stroke='%231e1c1a' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.paper:not(.ed) .acts .wbtn.del::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7 C 9 6, 15 7, 20 6 M9 6 C 9 4, 10 3, 12 3 C 14 3, 15 4, 15 6 M6 7 L 7 20 C 10 21, 14 21, 17 20 L 18 7 M10 10 L 10.5 17 M14 10 L 13.5 17' fill='none' stroke='%23b5604c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.paper .confirm {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font: 400 19px var(--pencil);
+}
+.paper .guestbox {
+  margin-top: 12px;
+  font: 400 15px/1.6 var(--ui);
+}
+.paper .gbtn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 9px 20px;
+  border: 1.5px solid #c9a87a;
+  border-radius: 8px;
+  background: #e6d6bd;
+  color: #1e1c1a;
+  font: 700 15px var(--ui);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* la nota se abre como su propio papel */
+.paper.asnote {
+  width: min(460px, 100%);
+  min-height: min(460px, 90dvh);
+  background: var(--np);
+  transform: rotate(-1.2deg);
+}
+.paper.asnote .ntape {
+  display: none;
+}
+.paper.asnote .nbody {
+  padding: 44px 34px 28px;
+}
+.paper.asnote :is(.nrow > span, .nchk button) {
+  color: rgba(30, 28, 26, 0.6);
+}
+.paper.asnote .nchk button.on {
+  color: #1e1c1a;
+}
+.paper.asnote.st-postit::before {
+  content: "";
+  position: absolute;
+  inset: 8px -8px -8px 8px;
+  z-index: -1;
+  background: color-mix(in srgb, var(--np) 82%, #000);
+  transform: rotate(3deg);
+}
+.paper.asnote.st-cuaderno {
+  width: min(440px, 100%);
+  min-height: min(560px, 92dvh);
+  background-image: linear-gradient(90deg, transparent 30px, #f2a3a3 30px 32px, transparent 32px),
+    repeating-linear-gradient(transparent 0 33px, #a9c6e6 33px 34px);
+  background-size: auto;
+  background-position: 0 0, 0 18px;
+}
+.paper.asnote.st-cuaderno .nbody {
+  padding-left: 48px;
+}
+
+/* ---------- acceso ---------- */
+.login .lf span {
+  font: 400 19px/1.6 var(--script);
+}
+.login .lf input,
+.login .lf input::placeholder {
+  font: 400 19px/1.6 var(--script);
+}
+
+@media (max-width: 760px) {
+  .tabs {
+    gap: 0;
+    padding: 4px 8px;
+  }
+  .tabs .tb {
+    font-size: 12px;
+    padding: 5px 6px 3px;
+  }
+  .htitle {
+    font-size: 30px;
+  }
+  .dock {
+    right: 12px;
+    bottom: 12px;
+  }
+  .paper .nbody {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 38px 20px 22px;
+  }
+  .paper.asnote.st-cuaderno .nbody {
+    padding-left: 48px;
+  }
+}
+
+/* selector de color libre: rueda arcoíris */
+.colors input[type="color"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  background: conic-gradient(#ff3b3b, #ffb03b, #fff23b, #4cd964, #3bc8ff, #4b5cff, #c63bff, #ff3b9a, #ff3b3b);
+}
+.colors input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+  opacity: 0;
+}
+.colors input[type="color"]::-moz-color-swatch {
+  opacity: 0;
+  border: 0;
+}
+
+body.traying .empty {
+  display: none;
+}

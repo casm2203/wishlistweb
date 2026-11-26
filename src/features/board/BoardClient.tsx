@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ARRANGE_EVENT } from "@/components/BoardMenu";
 import { STYLES } from "@/lib/spaces";
 import type { CardStyle, Item, ItemCategory, ItemDraft, ItemStatus, Space } from "@/lib/types";
 import { BoardStage, type StageApi } from "./BoardStage";
@@ -46,8 +45,27 @@ function pendingItem(p: Pending, space: Space): Item {
   };
 }
 
+function Grid() {
+  return (
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round">
+      <path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z" />
+    </svg>
+  );
+}
+
+function Eye() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 interface Props {
   space: Space;
+  /** Tablero editable al que se vuelve desde la vista de visitante (null sin sesión). */
+  editHref: string | null;
   initialItems: Item[];
   canEdit: boolean;
   /** Vista pública de solo lectura (portada y /ver/*). */
@@ -56,7 +74,7 @@ interface Props {
   reserve: "yes" | "login" | "no";
 }
 
-export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }: Props) {
+export function BoardClient({ space, editHref, initialItems, canEdit, readOnly, reserve }: Props) {
   const [items, setItems] = useState(() => initialItems.map(clampItem));
   const [dialog, setDialog] = useState<Dialog>(null);
   const [liftedId, setLiftedId] = useState<string | null>(null);
@@ -240,21 +258,6 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
     }
   }
 
-  // «Acomodar tarjetas» viene del menú hamburguesa; usamos siempre la última versión del manejador.
-  const arrangeRef = useRef(handleArrange);
-  useEffect(() => {
-    arrangeRef.current = handleArrange;
-  });
-  useEffect(() => {
-    const on = () => {
-      if (!canEdit) setNotice("Aquí solo puedes mirar; acomoda desde tu tablero ✿");
-      else if (itemsRef.current.length < 2) setNotice("Pega al menos dos tarjetas para acomodarlas ✿");
-      else void arrangeRef.current();
-    };
-    window.addEventListener(ARRANGE_EVENT, on);
-    return () => window.removeEventListener(ARRANGE_EVENT, on);
-  }, [canEdit]);
-
   async function handleDelete() {
     if (!current) return;
     try {
@@ -304,7 +307,7 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
 
       {items.length === 0 && (
         <p className="empty">
-          {canEdit ? "Este tablero está vacío… pega lo primero con el botón rosado ✿" : "Aquí todavía no hay nada ✿"}
+          {canEdit ? "Este tablero está vacío… agrega lo primero ✿" : "Aquí todavía no hay nada ✿"}
         </p>
       )}
 
@@ -334,32 +337,39 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
 
       <div className="dock">
         {canEdit && (
-          <Link href={space === "shared" ? "/" : `/ver/${space}`} className="eye" title="Ver como visitante" aria-label="Ver como visitante">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </Link>
-        )}
-        <button type="button" className="zb" aria-label="Alejar" onClick={() => zoomBy(-0.15)}>
-          −
-        </button>
-        <button type="button" className="zb" aria-label="Acercar" onClick={() => zoomBy(0.15)}>
-          +
-        </button>
-        {zoom !== 1 && (
-          <button type="button" className="zb all" onClick={() => setZoom(1)}>
-            ver todo
+          <button type="button" className="addbtn" onClick={() => setTray("pick")}>
+            + Agregar artículo
           </button>
         )}
+        <div className="drow">
+          {canEdit && items.length > 1 && (
+            <button type="button" className="zb arrange" title="Acomodar tarjetas" aria-label="Acomodar tarjetas" onClick={handleArrange}>
+              <Grid />
+            </button>
+          )}
+          {canEdit && (
+            <Link href={space === "shared" ? "/" : `/ver/${space}`} className="eye" title="Ver como visitante" aria-label="Ver como visitante">
+              <Eye />
+            </Link>
+          )}
+          {readOnly && editHref && (
+            <Link href={editHref} className="eye on" title="Volver a editar" aria-label="Volver a editar">
+              <Eye />
+            </Link>
+          )}
+          <button type="button" className="zb" aria-label="Alejar" onClick={() => zoomBy(-0.15)}>
+            −
+          </button>
+          <button type="button" className="zb" aria-label="Acercar" onClick={() => zoomBy(0.15)}>
+            +
+          </button>
+          {zoom !== 1 && (
+            <button type="button" className="zb all" onClick={() => setZoom(1)}>
+              ver todo
+            </button>
+          )}
+        </div>
       </div>
-
-      {canEdit && (
-        <button onClick={() => setTray("pick")} className="fab">
-          <b>+</b>pegar algo
-        </button>
-      )}
-      {readOnly && <div className="banner">Así lo ve quien entra a regalarte algo ✿</div>}
 
       {error && (
         <div
@@ -376,7 +386,7 @@ export function BoardClient({ space, initialItems, canEdit, readOnly, reserve }:
           onPlace={handlePlace}
           onHolder={(holder) => setTray((t) => (t && t !== "pick" ? { ...t, holder, holder_color: null } : t))}
           onPatch={(patch) => setTray((t) => (t && t !== "pick" ? { ...t, ...patch } : t))}
-          onBack={() => setTray("pick")}
+          onBack={() => setTray((t) => (t && t !== "pick" && t.holder ? { ...t, holder: null, holder_color: null } : "pick"))}
           onNext={() => setDialog({ type: "info" })}
           onClose={() => setTray(null)}
         />

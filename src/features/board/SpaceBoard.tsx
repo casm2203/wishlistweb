@@ -12,10 +12,12 @@ export async function SpaceBoard({ space, readOnly = false }: { space: Space; re
   // Reservar: solo con sesión y perfil, en el tablero de la otra persona (nunca el propio ni el compartido).
   const reserve: "yes" | "login" | "no" =
     space === "shared" || space === owner ? "no" : owner ? "yes" : viewer.loggedIn ? "no" : "login";
+  const editHref = !owner ? null : `/editar/${space === "shared" || space === owner ? space : owner}`;
   return (
     <BoardClient
       key={space}
       space={space}
+      editHref={editHref}
       initialItems={list}
       canEdit={canEdit}
       readOnly={readOnly}

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./board.css";
+@import "./diseno.css";
 
 @theme inline {
   --font-sans: var(--font-dm);

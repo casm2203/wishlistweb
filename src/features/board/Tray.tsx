@@ -124,9 +124,13 @@ export function Tray({ tmp, onPlace, onHolder, onPatch, onBack, onNext, onClose 
     window.addEventListener("touchmove", noScroll, { passive: false });
   }
 
+  // Tras elegir con qué se pega, «continuar» lleva al paso de colores.
+  const [colorStep, setColorStep] = useState(false);
   const choosing = tmp === null;
   const holder = tmp ? holderOf(tmp) : null;
   const hasHolder = !!tmp?.holder && tmp.holder !== "none";
+  const coloring = hasHolder && colorStep;
+  if (choosing && colorStep) setColorStep(false);
   const style = tmp ? styleOf(tmp) : null;
 
   return (
@@ -135,10 +139,10 @@ export function Tray({ tmp, onPlace, onHolder, onPatch, onBack, onNext, onClose 
         <div className="thd">
           <span className="t">
             {choosing
-              ? "arrastra lo que quieras al tablero ✿"
-              : hasHolder
+              ? "arrastra lo que quieras al tablero"
+              : coloring
                 ? "¿de qué color?"
-                : "¿con qué lo pegas? arrástralo encima ✿"}
+                : "¿con qué lo pegas? arrástralo encima"}
           </span>
           <button type="button" className="x2" onClick={onClose} aria-label="Cerrar">
             ✕
@@ -167,21 +171,23 @@ export function Tray({ tmp, onPlace, onHolder, onPatch, onBack, onNext, onClose 
           </div>
         ) : (
           <>
-            <div className="fstrip">
-              {HOLDER_ORDER.map((h, n) => (
-                <button
-                  key={h}
-                  type="button"
-                  aria-label={HOLDERS[h].label}
-                  className={`fbtn${tmp.holder === h ? " on" : ""}`}
-                  style={{ "--tr": `${[-10, 6, -4][n]}deg` } as React.CSSProperties}
-                  onPointerDown={(e) => startDrag(e, <HolderObject kind={h} />, () => onHolder(h))}
-                >
-                  <HolderObject kind={h} />
-                </button>
-              ))}
-            </div>
-            {hasHolder && holder && holder.kind !== "none" && style && (
+            {!coloring && (
+              <div className="fstrip">
+                {HOLDER_ORDER.map((h, n) => (
+                  <button
+                    key={h}
+                    type="button"
+                    aria-label={HOLDERS[h].label}
+                    className={`fbtn${tmp.holder === h ? " on" : ""}`}
+                    style={{ "--tr": `${[-10, 6, -4][n]}deg` } as React.CSSProperties}
+                    onPointerDown={(e) => startDrag(e, <HolderObject kind={h} />, () => onHolder(h))}
+                  >
+                    <HolderObject kind={h} />
+                  </button>
+                ))}
+              </div>
+            )}
+            {coloring && holder && holder.kind !== "none" && style && (
               <div className="tf">
                 <div className="crow">
                   <span>{holder.kind === "pin" ? "pin" : holder.kind === "tape" ? "cinta" : "clip"}</span>
@@ -208,12 +214,12 @@ export function Tray({ tmp, onPlace, onHolder, onPatch, onBack, onNext, onClose 
               </div>
             )}
             <div className="tacts">
-              <button type="button" className="btn soft" onClick={onBack}>
-                ← otro
+              <button type="button" className="btn soft" onClick={() => (coloring ? setColorStep(false) : onBack())}>
+                atrás
               </button>
               {hasHolder && (
-                <button type="button" className="btn pinkb" onClick={onNext}>
-                  listo, ponerle los datos →
+                <button type="button" className="btn pinkb" onClick={() => (coloring ? onNext() : setColorStep(true))}>
+                  continuar
                 </button>
               )}
             </div>

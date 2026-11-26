@@ -5,12 +5,12 @@ export const SPACES: Record<
   { label: string; short: string; href: string; title: string; sub: string; tab: string; sign: string }
 > = {
   cris: { label: "Espacio Cris", short: "Cris", href: "/cris", title: "Cris", sub: "lo que le gustaría a Cris", tab: "c", sign: "CRIS" },
-  shared: { label: "Espacio compartido", short: "Compartido", href: "/", title: "Cris & Melck", sub: "lo que queremos juntos ♡", tab: "s", sign: "CRIS & MELCK" },
+  shared: { label: "Espacio compartido", short: "En conjunto", href: "/", title: "Cris & Melck", sub: "lo que queremos juntos ♡", tab: "s", sign: "CRIS & MELCK" },
   melck: { label: "Espacio Melck", short: "Melck", href: "/melck", title: "Melck", sub: "cosas que me harían feliz ✿", tab: "", sign: "MELCK" },
 };
 
 /** Orden de las pestañas: el compartido va en el centro. */
-export const SPACE_ORDER: Space[] = ["cris", "shared", "melck"];
+export const SPACE_ORDER: Space[] = ["melck", "shared", "cris"];
 
 export const KINDS: Record<ItemKind, { label: string; color: string }> = {
   want: { label: "Lo quiero", color: "#ff8fa3" },
@@ -80,7 +80,7 @@ interface CategoryMeta {
 export const CATEGORIES: Record<ItemCategory, CategoryMeta> = {
   articulo: { label: "Artículo", icon: "🛍️", styles: ["polaroid", "estampilla", "recibo"], bg: "#e6eef8", emoji: "🎁", namePlaceholder: "Nombre del artículo", photo: true },
   cine: { label: "Cine", icon: "🎬", styles: ["boleta", "pelicula"], bg: "#b3202a", emoji: "🎬", namePlaceholder: "Película o función", photo: true },
-  viaje: { label: "Viaje", icon: "✈️", styles: ["correo"], bg: "#ffffff", emoji: "✈️", namePlaceholder: "Destino", photo: false },
+  viaje: { label: "Viaje", icon: "✈️", styles: ["correo"], bg: "#ffffff", emoji: "✈️", namePlaceholder: "Destino", photo: true },
   nota: { label: "Nota", icon: "📝", styles: ["postit", "cuaderno", "clasica", "ficha"], bg: "#fff3a6", emoji: "📝", namePlaceholder: "Título de la nota", photo: false },
 };
 
