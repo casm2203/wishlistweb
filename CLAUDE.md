@@ -79,13 +79,17 @@ design-src/                originales sin procesar (NO van al repo ni se sirven;
 - No leer refs durante render (regla `react-hooks/refs` activa).
 
 ## Pendientes
+Las tareas del proyecto viven en una página privada de Notion («Wishlist»), a la que solo se entra con Claude in Chrome.
+- [x] Notion «Cambiar tipografía de la Wishlist», «Terminar diseño de la Wishlist» y «Pasar el boceto a la página»: en producción y marcadas «Listo» (26 nov 2026). El estado general del proyecto sigue «En curso».
+- [x] Diseño alrededor del tablero según el artefacto (título, pestañas, botones, bandeja y fichas), sin cambiar corcho ni tarjetas; probados en local creación, edición, estados, borrado, acomodar, reserva y vista de celular.
 - [x] Migración Supabase → Postgres propio (22 nov 2026): esquema Drizzle, 1 item + foto importados, variables en Vercel, producción probada (login, reservar/liberar, foto, mover, borrar). Proyecto de Supabase pausado.
 - [x] El formulario no deja guardar mientras se procesa la foto («Preparando foto…»).
 - [x] Next actualizado a 16.4.6 y `npm audit` sin vulnerabilidades (26 nov 2026; `overrides` fuerza un esbuild seguro en la dependencia de desarrollo de drizzle-kit).
 - [ ] Login por nombre sin contraseña: cualquiera con la URL de `/login` entra como Cris o Melck; valorar un PIN por persona.
 - [ ] Sin plan B si el portátil cae (sin réplica). Repetir `restore-test.sh` del servidor cuando haya más datos reales.
 - [ ] Revisar con el usuario: pines sin usar (negro, rosa, cian, amarillo, menta, morado), zona de texto de los tickets y capacidad (~35-40 artículos por tablero).
-- [ ] Probar el pegado real con Ctrl/⌘+V (se probó subiendo archivo) y la edición completa desde la UI.
+- [ ] Probar en el formulario el pegado real de foto con Ctrl/⌘+V y el autocompletado al pegar un enlace (la foto se probó subiendo archivo).
+- [ ] Probar los gestos táctiles (arrastrar y pellizco) en un celular real.
 - [ ] Zoom con rueda simple para usuarios de mouse (hoy rueda = mover; zoom = Ctrl/⌘+rueda).
 - [ ] Minimapa y selección múltiple en el tablero.
 - [ ] Ordenar/filtrar por tipo, estado y casillero.
