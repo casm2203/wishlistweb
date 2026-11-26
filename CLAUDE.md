@@ -80,7 +80,7 @@ design-src/                originales sin procesar (NO van al repo ni se sirven;
 
 ## Pendientes
 Las tareas del proyecto viven en una página privada de Notion («Wishlist»), a la que solo se entra con Claude in Chrome.
-- [x] Notion «Cambiar tipografía de la Wishlist», «Terminar diseño de la Wishlist» y «Pasar el boceto a la página»: en producción y marcadas «Listo» (26 nov 2026). El estado general del proyecto sigue «En curso».
+- [x] Notion «Cambiar tipografía de la Wishlist», «Terminar diseño de la Wishlist» y «Pasar el boceto a la página»: en producción y marcadas «Listo» (26 nov 2026). El proyecto también quedó en «Listo».
 - [x] Diseño alrededor del tablero según el artefacto (título, pestañas, botones, bandeja y fichas), sin cambiar corcho ni tarjetas; probados en local creación, edición, estados, borrado, acomodar, reserva y vista de celular.
 - [x] Migración Supabase → Postgres propio (22 nov 2026): esquema Drizzle, 1 item + foto importados, variables en Vercel, producción probada (login, reservar/liberar, foto, mover, borrar). Proyecto de Supabase pausado.
 - [x] El formulario no deja guardar mientras se procesa la foto («Preparando foto…»).
